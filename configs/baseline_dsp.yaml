@@ -1,0 +1,24 @@
+# ── DSP baseline config ──
+# No ML model; pedalboard-based audio processing conditioned on stress proxy.
+
+_base_: "base.yaml"
+
+run_name: "baseline_dsp_v1"
+description: "DSP baseline: EQ + dynamics + pitch via pedalboard, no codec editing"
+
+# Disable codec/BPE/editor for this baseline
+bpe:
+  enabled: false
+
+editor:
+  architecture: null
+
+# DSP-specific parameters
+dsp:
+  eq_low_shelf_hz: 200
+  eq_low_shelf_gain_range_db: [-3.0, 0.0]   # mapped from u(t)
+  eq_high_shelf_hz: 4000
+  eq_high_shelf_gain_range_db: [-2.0, 0.0]
+  compressor_threshold_range_db: [-20.0, -10.0]
+  compressor_ratio: 3.0
+  pitch_shift_range_semitones: [-0.5, 0.0]   # subtle downward shift at high u

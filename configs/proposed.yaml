@@ -1,0 +1,16 @@
+# ── Proposed pipeline config ──
+# Inherits from base.yaml; overrides listed here.
+
+_base_: "base.yaml"
+
+run_name: "proposed_v1"
+description: "WavTokenizer (40tok/s) + codec-BPE + GPT2-small conditional editor"
+
+# BPE is ON
+bpe:
+  enabled: true
+
+# Editor uses the full transformer
+editor:
+  architecture: "gpt2"
+  n_layers: 6
