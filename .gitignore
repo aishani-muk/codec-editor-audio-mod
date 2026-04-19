@@ -19,7 +19,12 @@ env/
 
 # Data (large files — download via scripts)
 data/saraga_yaman/
+data/saraga_kalyan_thaat/
+data/saraga_hindustani_raw/
+data/paired_edits/
+data/raga_features/
 data/deam/
+data/wesad/
 data/tokens/
 
 # Checkpoints (large — track via DVC or download)
