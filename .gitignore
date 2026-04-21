@@ -34,6 +34,7 @@ data/deam/
 data/wesad/
 data/tokens/
 
+
 # Checkpoints (large — track via DVC or download)
 checkpoints/*/step_*/
 checkpoints/*/best/
