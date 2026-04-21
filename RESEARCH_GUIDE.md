@@ -318,7 +318,7 @@ Labels: [-100, -100, ..., -100, target_token_1, target_token_2, ..., target_toke
 ### Phase 1: Data Preparation
 ```bash
 # Download Saraga Yaman recordings + annotations
-python data/download_saraga.py --raga yaman --output data/saraga_yaman/
+python data/download_saraga.py --raga yaman --output data/saraga_kalyan_thaat/
 
 # Download DEAM for valence/arousal evaluation
 python data/download_deam.py --output data/deam/
@@ -327,21 +327,21 @@ python data/download_deam.py --output data/deam/
 # Place in data/wesad/
 
 # Generate synthetic paired edits
-python data/prepare_pairs.py --audio_dir data/saraga_yaman/ --output data/paired_edits/
+python data/prepare_pairs.py --audio_dir data/saraga_kalyan_thaat/ --output data/paired_edits/
 ```
 
 ### Phase 2: Tokenization
 ```bash
 # Encode all audio with WavTokenizer
-python tokenize/encode_wavtokenizer.py --input data/paired_edits/input/ --output data/tokens/input_wavtok/
-python tokenize/encode_wavtokenizer.py --input data/paired_edits/target/ --output data/tokens/target_wavtok/
+python tokenization/encode_wavtokenizer.py --input data/paired_edits/input/ --output data/tokens/input_wavtok/
+python tokenization/encode_wavtokenizer.py --input data/paired_edits/target/ --output data/tokens/target_wavtok/
 
 # Train BPE tokenizer
-python tokenize/train_bpe.py --codes_dir data/tokens/input_wavtok/ --output data/tokens/bpe_model/
+python tokenization/train_bpe.py --codes_dir data/tokens/input_wavtok/ --output data/tokens/bpe_model/
 
 # Apply BPE compression
-python tokenize/apply_bpe.py --codes_dir data/tokens/input_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/input_bpe/
-python tokenize/apply_bpe.py --codes_dir data/tokens/target_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/target_bpe/
+python tokenization/apply_bpe.py --codes_dir data/tokens/input_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/input_bpe/
+python tokenization/apply_bpe.py --codes_dir data/tokens/target_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/target_bpe/
 ```
 
 ### Phase 3: Training
@@ -356,15 +356,15 @@ tensorboard --logdir checkpoints/proposed_v1/
 ### Phase 4: Evaluation
 ```bash
 # Evaluate proposed pipeline
-python evaluate.py --input data/saraga_yaman/ --output results/proposed_v1/ --tonic_dir data/saraga_yaman/
+python evaluate.py --input data/saraga_kalyan_thaat/ --output results/proposed_v1/ --tonic_dir data/saraga_kalyan_thaat/
 
 # Evaluate DSP baseline
-python baselines/dsp_baseline.py --input data/saraga_yaman/ --output results/baseline_dsp/ --u 0.6
-python evaluate.py --input data/saraga_yaman/ --output results/baseline_dsp/ --tonic_dir data/saraga_yaman/
+python baselines/dsp_baseline.py --input data/saraga_kalyan_thaat/ --output results/baseline_dsp/ --u 0.6
+python evaluate.py --input data/saraga_kalyan_thaat/ --output results/baseline_dsp/ --tonic_dir data/saraga_kalyan_thaat/
 
 # Evaluate EnCodec+MLP baseline
-python baselines/encodec_mlp_baseline.py --input data/saraga_yaman/ --output results/baseline_encodec_mlp/ --u 0.6
-python evaluate.py --input data/saraga_yaman/ --output results/baseline_encodec_mlp/ --tonic_dir data/saraga_yaman/
+python baselines/encodec_mlp_baseline.py --input data/saraga_kalyan_thaat/ --output results/baseline_encodec_mlp/ --u 0.6
+python evaluate.py --input data/saraga_kalyan_thaat/ --output results/baseline_encodec_mlp/ --tonic_dir data/saraga_kalyan_thaat/
 ```
 
 ### Phase 5: Ablation Studies
@@ -374,7 +374,7 @@ python train.py --config configs/proposed_no_bpe.yaml --run_name proposed_no_bpe
 
 # Ablation: u(t) sweep
 for u in 0.0 0.2 0.4 0.6 0.8 1.0; do
-  python evaluate.py --input data/saraga_yaman/ --output results/u_sweep_$u/ --u $u
+  python evaluate.py --input data/saraga_kalyan_thaat/ --output results/u_sweep_$u/ --u $u
 done
 
 # Ablation: window/hop
@@ -413,7 +413,7 @@ git clone https://github.com/jishengpeng/WavTokenizer.git third_party/WavTokeniz
 #SBATCH --cpus-per-task=4
 
 conda activate raga-mod
-python data/prepare_pairs.py --audio_dir data/saraga_yaman/ --output data/paired_edits/
+python data/prepare_pairs.py --audio_dir data/saraga_kalyan_thaat/ --output data/paired_edits/
 ```
 
 **Tokenization (GPU, 30 min)**:
@@ -426,11 +426,11 @@ python data/prepare_pairs.py --audio_dir data/saraga_yaman/ --output data/paired
 #SBATCH --time=00:30:00
 
 conda activate raga-mod
-python tokenize/encode_wavtokenizer.py --input data/paired_edits/input/ --output data/tokens/input_wavtok/
-python tokenize/encode_wavtokenizer.py --input data/paired_edits/target/ --output data/tokens/target_wavtok/
-python tokenize/train_bpe.py --codes_dir data/tokens/input_wavtok/ --output data/tokens/bpe_model/
-python tokenize/apply_bpe.py --codes_dir data/tokens/input_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/input_bpe/
-python tokenize/apply_bpe.py --codes_dir data/tokens/target_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/target_bpe/
+python tokenization/encode_wavtokenizer.py --input data/paired_edits/input/ --output data/tokens/input_wavtok/
+python tokenization/encode_wavtokenizer.py --input data/paired_edits/target/ --output data/tokens/target_wavtok/
+python tokenization/train_bpe.py --codes_dir data/tokens/input_wavtok/ --output data/tokens/bpe_model/
+python tokenization/apply_bpe.py --codes_dir data/tokens/input_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/input_bpe/
+python tokenization/apply_bpe.py --codes_dir data/tokens/target_wavtok/ --bpe_model data/tokens/bpe_model/ --output data/tokens/target_bpe/
 ```
 
 **Training (GPU, 12 hours)**:

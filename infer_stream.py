@@ -10,7 +10,7 @@ stress proxy.  For offline evaluation it processes a file in one pass.
 
 Usage:
     python infer_stream.py \
-        --input  data/saraga_yaman/YMN-01.wav \
+        --input  data/saraga_kalyan_thaat/YMN-01.wav \
         --output results/proposed_v1/YMN-01_modulated.wav \
         --checkpoint checkpoints/proposed_v1/best/ \
         --config configs/proposed.yaml \
@@ -18,7 +18,7 @@ Usage:
 
     # With WESAD-trained stress proxy (variable u over time):
     python infer_stream.py \
-        --input  data/saraga_yaman/YMN-01.wav \
+        --input  data/saraga_kalyan_thaat/YMN-01.wav \
         --output results/proposed_v1/YMN-01_modulated.wav \
         --checkpoint checkpoints/proposed_v1/best/ \
         --config configs/proposed.yaml \
@@ -137,15 +137,23 @@ def run_streaming_inference(
     """
     Full pipeline: load audio → tokenize → window → edit → decode → save.
     """
-    # ── Load config ──
-    with open(config_path) as f:
-        cfg = yaml.safe_load(f)
-    if "_base_" in cfg:
-        base_path = Path(config_path).parent / cfg["_base_"]
-        with open(base_path) as f:
-            base_cfg = yaml.safe_load(f)
-        base_cfg.update({k: v for k, v in cfg.items() if k != "_base_"})
-        cfg = base_cfg
+    def _deep_merge(b, o):
+        out = dict(b)
+        for k, v in o.items():
+            if k in out and isinstance(out[k], dict) and isinstance(v, dict):
+                out[k] = _deep_merge(out[k], v)
+            else:
+                out[k] = v
+        return out
+
+    def _load(p):
+        with open(p) as f:
+            c = yaml.safe_load(f)
+        if "_base_" in c:
+            base = _load(str(Path(p).parent / c["_base_"]))
+            c = _deep_merge(base, {k: v for k, v in c.items() if k != "_base_"})
+        return c
+    cfg = _load(config_path)
 
     device = device if torch.cuda.is_available() else "cpu"
     sr = cfg["sample_rate"]

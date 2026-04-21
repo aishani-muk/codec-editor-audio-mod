@@ -1,0 +1,15 @@
+# ── Smaller "proposed" variant ──
+# 5-6M parameter model to reduce capacity-to-data ratio. Inherits the
+# redesigned stack (speech-75 + input-aligned residual + raga-label +
+# windowed-crop training + aux JSD) from base.yaml, just shrinks the
+# transformer to 3 layers / d_model=256.
+_base_: "base.yaml"
+
+run_name: "proposed_small"
+description: "3L d256 (~6M params) + 7.9k pairs + continuous lambda"
+
+editor:
+  n_layers: 3
+  d_model: 256
+  d_ff: 1024
+  n_heads: 4

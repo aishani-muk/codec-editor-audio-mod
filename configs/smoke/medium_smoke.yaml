@@ -1,0 +1,27 @@
+# ── Medium-smoke config ──
+# Inherits from proposed_no_bpe.yaml; 10x the step budget of the 200-step
+# smoke. Purpose: watch loss trajectory long enough to decide whether
+# the full 12h run will converge.
+#
+# Expected on a well-configured pipeline:
+#   - Val loss drops monotonically over ~10 checkpoints
+#   - Training loss below val loss (generalization gap small but positive)
+#   - No NaNs, stable LR schedule
+
+_base_: "../proposed.yaml"
+
+run_name: "medium_smoke"
+description: "2000-step shakedown with redesigned stack (speech-75 + residual + raga-label)"
+
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 1
+  learning_rate: 5.0e-4            # bumped up from 3e-4 to probe capacity
+  weight_decay: 0.01
+  warmup_steps: 100
+  max_steps: 2000
+  eval_steps: 200
+  save_steps: 1000
+  early_stop_patience: 99
+  fp16: true
+  dataloader_num_workers: 2

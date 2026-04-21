@@ -1,0 +1,10 @@
+# Ablation: use the legacy "concat" architecture instead of the input-
+# aligned residual. Quantifies how much the residual editor buys us.
+
+_base_: "../proposed.yaml"
+
+run_name: "abl_concat_arch"
+description: "Legacy concat architecture (no input-aligned residual)"
+
+editor:
+  use_input_residual: false

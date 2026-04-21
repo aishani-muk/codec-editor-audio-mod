@@ -10,42 +10,51 @@ stress-proxy control signal. Evaluated on Indian classical music preservation
 
 ```
 modelling/
-├── README.md                     # This file
-├── requirements.txt              # All pip dependencies
+├── README.md, RESEARCH_GUIDE.md   # Project docs + research walkthrough
+├── requirements.txt               # All pip dependencies
+├── train.py                       # Editor fine-tune (paired-edit objective)
+├── pretrain_codec_lm.py           # Raw-codec LM pretraining stage
+├── infer_stream.py                # Streaming inference demo
+├── evaluate.py                    # Eval: tonic, PCD JSD, smoothness, DEAM, raga-id
 ├── configs/
-│   ├── base.yaml                 # Shared hyperparams
-│   ├── proposed.yaml             # Proposed pipeline config
-│   └── baseline_dsp.yaml         # DSP baseline config
+│   ├── base.yaml                  # Shared hyperparams (speech-75, residual, raga)
+│   ├── proposed.yaml              # 22M editor
+│   ├── proposed_small.yaml        # 6M editor (recommended after smoke)
+│   ├── pretrain_codec_lm.yaml     # Codec-LM pretrain
+│   ├── baseline_dsp.yaml          # DSP-only baseline
+│   ├── smoke/                     # Quick-validation configs
+│   └── ablations/                 # abl_no_raga, abl_concat_arch, abl_unify40
 ├── data/
-│   ├── download_saraga.py        # Download Saraga Hindustani Yaman subset
-│   ├── download_deam.py          # Download DEAM valence/arousal annotations
-│   ├── prepare_pairs.py          # Generate synthetic paired edits for training
-│   └── README.md                 # Data preparation instructions
-├── tokenize/
-│   ├── encode_wavtokenizer.py    # Encode WAVs → WavTokenizer discrete codes
-│   ├── train_bpe.py              # Train codec-BPE tokenizer on encoded codes
-│   └── apply_bpe.py              # Apply trained BPE to compress token sequences
+│   ├── download_saraga.py, download_deam.py, download_wesad.py
+│   ├── filter_saraga.py, mp3_to_wav.py, extract_raga_features.py
+│   ├── prepare_pairs.py           # Synthetic (input, target, λ) generator
+│   └── test_clips/                # 2 held-out Yaman clips for eval
+├── tokenization/
+│   └── encode_wavtokenizer.py     # WAV → WavTokenizer speech-75 tokens
 ├── models/
-│   ├── codec_editor.py           # Conditional codec-to-codec transformer editor
-│   ├── stress_proxy.py           # Stress-proxy signal generation & embedding
-│   └── overlap_add.py            # Windowed inference + crossfaded overlap-add
+│   ├── codec_editor.py            # Conditional codec-to-codec editor
+│   ├── stress_proxy.py            # u(t) generator + embedding
+│   └── overlap_add.py             # Streaming overlap-add crossfader
+├── evaluation/                    # (added) MERT-based feature wrapper + helpers
 ├── baselines/
-│   ├── dsp_baseline.py           # DSP baseline: pedalboard EQ/dynamics/pitch
-│   └── encodec_mlp_baseline.py   # EnCodec + learned linear token map baseline
-├── train.py                      # Main training loop (HF Trainer + checkpoints)
-├── evaluate.py                   # Evaluation: tonic drift, JSD, smoothness, DEAM
-├── infer_stream.py               # Streaming inference demo
-└── checkpoints/                  # Auto-populated during training
-    └── .gitkeep
+│   ├── dsp_baseline.py            # pedalboard EQ/dynamics/pitch
+│   └── encodec_mlp_baseline.py    # EnCodec + linear token map
+├── scripts/
+│   ├── plot_run.py                # Live training-log dashboard
+│   ├── preflight.sh, setup_env.sh, stage_test_clips.sh
+│   └── slurm/                     # SLURM batch scripts
+├── legacy/                        # Not on critical path (BPE, orchestrator, WESAD)
+├── checkpoints/                   # Auto-populated during training
+└── third_party/WavTokenizer/      # Upstream codec source
 ```
 
 ## Pipeline: Proposed vs Baseline
 
 ### Proposed Pipeline
-1. **Tokenize**: WavTokenizer-large-unify-40token (40 tok/s, single codebook, 4096 codes)
-2. **Compress**: codec-BPE trained on Saraga + DEAM audio
-3. **Edit**: Conditional GPT-2-small transformer (input BPE tokens + stress embedding → edited BPE tokens)
-4. **Decode**: BPE detokenize → WavTokenizer decode → overlap-add crossfade
+1. **Tokenize**: WavTokenizer speech-75 (75 tok/s, single codebook, 4096 codes — vocal-optimised)
+2. **Pretrain**: unconditional next-token LM on target-side codec tokens (`pretrain_codec_lm.py`) — gives the embedding a music-codec prior before paired fine-tuning
+3. **Edit**: Conditional GPT-2 transformer — input tokens + stress u(t) + raga-label → edited tokens; trained on (input, target, λ) pairs with windowed crops matching the streaming inference window
+4. **Decode**: WavTokenizer decode → overlap-add crossfade for gapless streaming
 
 ### Baseline: DSP
 1. **Process**: pedalboard chain (parametric EQ, compressor, pitch shift) conditioned on u(t)
@@ -88,25 +97,27 @@ checkpoints/
 pip install -r requirements.txt
 
 # 2. Download & prepare data
-python data/download_saraga.py --raga yaman --output data/saraga_yaman/
+python data/download_saraga.py --raga yaman --output data/saraga_kalyan_thaat/
 python data/download_deam.py --output data/deam/
 python data/prepare_pairs.py --config configs/proposed.yaml
 
-# 3. Tokenize
-python tokenize/encode_wavtokenizer.py --input data/saraga_yaman/ --output data/tokens/wavtok/
-python tokenize/train_bpe.py --codes_dir data/tokens/wavtok/ --output data/tokens/bpe_model/
-python tokenize/apply_bpe.py --codes_dir data/tokens/wavtok/ --bpe_model data/tokens/bpe_model/
+# 3. Tokenize (GPU — use the SLURM script)
+sbatch scripts/slurm/slurm_tokenize_speech75.sh
 
-# 4. Train
-python train.py --config configs/proposed.yaml --run_name proposed_v1
+# 4. Codec-LM pretrain, then editor fine-tune
+python pretrain_codec_lm.py --config configs/pretrain_codec_lm.yaml --run_name pretrain_v1
+python train.py --config configs/proposed_small.yaml --run_name proposed_v1 \
+    --pretrain_ckpt checkpoints/pretrain_v1/pretrain.pt
 
-# 5. Evaluate
-python evaluate.py --checkpoint checkpoints/proposed_v1/best/ --config configs/proposed.yaml
+# 5. Smoke-validate loss trajectory before committing to 12 h
+sbatch scripts/slurm/slurm_medium_smoke.sh
 
-# 6. Run baselines
+# 6. Evaluate proposed + DSP baseline
+python evaluate.py --checkpoint checkpoints/proposed_v1/best/ --config configs/proposed_small.yaml
 python baselines/dsp_baseline.py --config configs/baseline_dsp.yaml
-python evaluate.py --baseline dsp --config configs/baseline_dsp.yaml
 ```
+
+> BPE-compressed tokens are disabled in `configs/base.yaml` (only ~5 % compression on music codes vs. ~40 % on speech). The BPE tooling survives in `legacy/tokenization/` for future ablations.
 
 ## Cluster (NEXUS) Usage
 ```bash

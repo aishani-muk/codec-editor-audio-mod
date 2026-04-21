@@ -1,13 +1,25 @@
 """
 Conditional codec-to-codec transformer editor.
 
-Takes input codec tokens (optionally BPE-compressed) + a stress-proxy embedding
-and outputs edited codec tokens. Based on a GPT-2-style decoder-only transformer
-with cross-attention to the conditioning signal.
+Architecture (input-aligned residual; May-2026 redesign):
 
-Architecture:
-    input_tokens + positional_embed + stress_embed → transformer layers → output_logits
+    The decoder-only transformer sees the concatenation [input | target]. For
+    every target position t we ADDITIONALLY add the time-aligned input-token
+    embedding ``wte(input[clamp(t, T_in-1)])`` to the target-embedding stream.
+
+    This gives the model direct positional access to the source token it is
+    editing, so the λ=0 "identity edit" case is trivially solvable and the
+    network only has to learn the *residual* for larger λ. Empirically this
+    is a much better inductive bias for codec-to-codec editing than the
+    original "look back across the T_in boundary via self-attention" scheme
+    (see docs/redesign_apr2026.md).
+
+    A learned raga-label embedding (one per clip, broadcast over every
+    position) and the stress-proxy embedding (per input position) are added
+    to both the input and target embedding streams.
 """
+
+from __future__ import annotations
 
 import torch
 import torch.nn as nn
@@ -15,14 +27,7 @@ from transformers import GPT2Config, GPT2LMHeadModel
 
 
 class CodecEditor(nn.Module):
-    """
-    Conditional codec-to-codec editor built on GPT-2.
-
-    The model receives:
-        - input_ids: (B, T) token IDs from WavTokenizer (+ optional BPE)
-        - stress_embeds: (B, T, embed_dim) from StressEmbedding
-    and produces logits over the output token vocabulary.
-    """
+    """Conditional codec-to-codec editor built on GPT-2."""
 
     def __init__(
         self,
@@ -35,9 +40,12 @@ class CodecEditor(nn.Module):
         max_seq_len: int = 2048,
         dropout: float = 0.1,
         stress_embed_dim: int = 64,
+        n_ragas: int = 0,
+        use_input_residual: bool = True,
     ):
         super().__init__()
-        # Use BPE vocab if enabled, otherwise raw codec vocab
+
+        # Effective vocab: BPE output if used, else raw codec vocab.
         effective_vocab = bpe_vocab_size if bpe_vocab_size else vocab_size
 
         self.config = GPT2Config(
@@ -53,70 +61,132 @@ class CodecEditor(nn.Module):
         )
         self.transformer = GPT2LMHeadModel(self.config)
 
-        # Project stress embedding to match model dimension
+        # Projection for stress-proxy vector (per input position).
         self.stress_proj = nn.Linear(stress_embed_dim, d_model)
 
-        # Learnable "task" embedding to distinguish input vs. target sections
-        self.role_embed = nn.Embedding(2, d_model)  # 0=input, 1=target
+        # 0 = input role, 1 = target role.
+        self.role_embed = nn.Embedding(2, d_model)
 
+        # Optional raga conditioning. 0 is reserved for UNK/no-raga-available.
+        self.n_ragas = n_ragas
+        if n_ragas > 0:
+            self.raga_embed = nn.Embedding(n_ragas + 1, d_model)
+        else:
+            self.raga_embed = None
+
+        self.use_input_residual = use_input_residual
+
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+    def _target_aligned_input_emb(
+        self,
+        input_ids: torch.Tensor,
+        t_out: int,
+    ) -> torch.Tensor:
+        """For each target position t in [0, t_out), return
+        ``wte(input[:, min(t, T_in-1)])`` so the last input token is reused
+        whenever the target overshoots the input length."""
+        t_in = input_ids.size(1)
+        if t_in == 0:
+            B = input_ids.size(0)
+            D = self.transformer.transformer.wte.embedding_dim
+            return torch.zeros(B, t_out, D,
+                               device=input_ids.device,
+                               dtype=self.transformer.transformer.wte.weight.dtype)
+        idx = torch.arange(t_out, device=input_ids.device).clamp(max=t_in - 1)
+        aligned_ids = input_ids[:, idx]                          # (B, t_out)
+        return self.transformer.transformer.wte(aligned_ids)     # (B, t_out, D)
+
+    def _conditioning_embedding(
+        self,
+        B: int,
+        T_total: int,
+        T_in: int,
+        device: torch.device,
+        stress_embeds: torch.Tensor | None,
+        raga_ids: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Build role + stress + raga conditioning at every position."""
+        # Role.
+        role_ids = torch.zeros(B, T_total, dtype=torch.long, device=device)
+        role_ids[:, T_in:] = 1
+        cond = self.role_embed(role_ids)
+
+        # Stress (broadcast across all positions).
+        if stress_embeds is not None:
+            # Pad to full length if stress is only given over the input span.
+            if stress_embeds.size(1) < T_total:
+                # Repeat the last frame (u is constant per clip anyway).
+                pad_n = T_total - stress_embeds.size(1)
+                pad = stress_embeds[:, -1:, :].expand(B, pad_n, -1)
+                stress_full = torch.cat([stress_embeds, pad], dim=1)
+            else:
+                stress_full = stress_embeds[:, :T_total, :]
+            cond = cond + self.stress_proj(stress_full)
+
+        # Raga (one vector per clip, broadcast).
+        if raga_ids is not None and self.raga_embed is not None:
+            raga_vec = self.raga_embed(raga_ids).unsqueeze(1)    # (B, 1, D)
+            cond = cond + raga_vec
+
+        return cond
+
+    # -------------------------------------------------------------------------
+    # Forward
+    # -------------------------------------------------------------------------
     def forward(
         self,
         input_ids: torch.Tensor,
         target_ids: torch.Tensor | None = None,
         stress_embeds: torch.Tensor | None = None,
         attention_mask: torch.Tensor | None = None,
+        raga_ids: torch.Tensor | None = None,
+        target_mask: torch.Tensor | None = None,
     ) -> dict:
-        """
-        Forward pass for training (teacher-forced) or inference.
-
-        For training: concatenate [input_ids | target_ids] and predict target_ids.
-        For inference: pass input_ids and generate autoregressively.
+        """Training (teacher-forced) or inference forward pass.
 
         Args:
-            input_ids: (B, T_in) source token IDs.
-            target_ids: (B, T_out) target token IDs (training only).
-            stress_embeds: (B, T_in, stress_embed_dim) conditioning.
-            attention_mask: (B, T_total) optional mask.
-
-        Returns:
-            dict with 'loss' (if target_ids given) and 'logits'.
+            input_ids:      (B, T_in) source tokens.
+            target_ids:     (B, T_out) target tokens (training only).
+            stress_embeds:  (B, T_in, stress_embed_dim) or (B, T_total, ...).
+            attention_mask: (B, T_total) 1=valid, 0=pad. Used by GPT-2 attention.
+            raga_ids:       (B,) long tensor of raga indices (0=UNK) or None.
+            target_mask:    (B, T_out) 1=real target token, 0=pad. Padded
+                            positions are excluded from the LM loss via labels.
         """
         B, T_in = input_ids.shape
         device = input_ids.device
+        wte = self.transformer.transformer.wte
 
         if target_ids is not None:
-            # Training: concat input + target
-            T_out = target_ids.shape[1]
-            full_ids = torch.cat([input_ids, target_ids], dim=1)  # (B, T_in+T_out)
+            # ── Training path ───────────────────────────────────────────────
+            T_out = target_ids.size(1)
+            T_total = T_in + T_out
 
-            # Role embeddings
-            role_ids = torch.cat([
-                torch.zeros(B, T_in, dtype=torch.long, device=device),
-                torch.ones(B, T_out, dtype=torch.long, device=device),
-            ], dim=1)
-            role_emb = self.role_embed(role_ids)
+            tok_emb = wte(torch.cat([input_ids, target_ids], dim=1))
 
-            # Stress conditioning (zero-padded for target portion)
-            if stress_embeds is not None:
-                stress_cond = self.stress_proj(stress_embeds)  # (B, T_in, d_model)
-                pad = torch.zeros(B, T_out, stress_cond.shape[-1],
-                                  device=device, dtype=stress_cond.dtype)
-                stress_cond = torch.cat([stress_cond, pad], dim=1)
-            else:
-                stress_cond = 0.0
+            # Input-aligned residual on the target portion.
+            if self.use_input_residual:
+                aligned = self._target_aligned_input_emb(input_ids, T_out)
+                tok_emb = torch.cat(
+                    [tok_emb[:, :T_in, :], tok_emb[:, T_in:, :] + aligned],
+                    dim=1,
+                )
 
-            # Get token embeddings and add conditioning
-            inputs_embeds = (
-                self.transformer.transformer.wte(full_ids)
-                + role_emb
-                + stress_cond
+            cond = self._conditioning_embedding(
+                B, T_total, T_in, device, stress_embeds, raga_ids
             )
+            inputs_embeds = tok_emb + cond
 
-            # Labels: -100 for input portion (don't compute loss), target_ids for rest
-            labels = torch.cat([
-                torch.full((B, T_in), -100, dtype=torch.long, device=device),
-                target_ids,
-            ], dim=1)
+            # Labels: -100 for input + padded target positions.
+            labels = torch.cat(
+                [torch.full((B, T_in), -100, dtype=torch.long, device=device),
+                 target_ids.clone()],
+                dim=1,
+            )
+            if target_mask is not None:
+                labels[:, T_in:][target_mask == 0] = -100
 
             outputs = self.transformer(
                 inputs_embeds=inputs_embeds,
@@ -125,86 +195,122 @@ class CodecEditor(nn.Module):
             )
             return {"loss": outputs.loss, "logits": outputs.logits}
 
-        else:
-            # Inference: just encode the input portion
-            role_emb = self.role_embed(
-                torch.zeros(B, T_in, dtype=torch.long, device=device)
-            )
-            if stress_embeds is not None:
-                stress_cond = self.stress_proj(stress_embeds)
-            else:
-                stress_cond = 0.0
+        # ── Inference path (encode-only) ────────────────────────────────────
+        T_total = T_in
+        tok_emb = wte(input_ids)
+        cond = self._conditioning_embedding(
+            B, T_total, T_in, device, stress_embeds, raga_ids
+        )
+        outputs = self.transformer(
+            inputs_embeds=tok_emb + cond,
+            attention_mask=attention_mask,
+        )
+        return {"logits": outputs.logits}
 
-            inputs_embeds = (
-                self.transformer.transformer.wte(input_ids)
-                + role_emb
-                + stress_cond
-            )
-            outputs = self.transformer(
-                inputs_embeds=inputs_embeds,
-                attention_mask=attention_mask,
-            )
-            return {"logits": outputs.logits}
-
+    # -------------------------------------------------------------------------
+    # Generation
+    # -------------------------------------------------------------------------
     @torch.no_grad()
     def generate_edited(
         self,
         input_ids: torch.Tensor,
         stress_embeds: torch.Tensor,
+        raga_ids: torch.Tensor | None = None,
         max_new_tokens: int = 256,
         temperature: float = 0.8,
         top_k: int = 40,
     ) -> torch.Tensor:
-        """
-        Autoregressively generate edited tokens given input tokens + stress.
+        """Autoregressively produce target tokens given the input.
 
-        Args:
-            input_ids: (B, T_in) source tokens.
-            stress_embeds: (B, T_in, stress_embed_dim).
-            max_new_tokens: Maximum tokens to generate.
-            temperature: Sampling temperature.
-            top_k: Top-k sampling.
+        Decoding mirrors the training-time layout exactly:
 
-        Returns:
-            (B, T_out) generated edited token IDs.
+          1. The input prefix is embedded with role=0 conditioning and a
+             single forward pass is run; ``logits[:, -1, :]`` naturally
+             predicts ``target[0]`` — same shift convention as training.
+          2. For ``t >= 1`` we embed the just-sampled ``target[t-1]``,
+             add the input-aligned residual ``wte(input[min(t-1, T_in-1)])``
+             plus role=1 / stress / raga conditioning, and advance the
+             cached KV state one step at a time. No ``prev_token = 0``
+             sentinel; the model is never fed a token-ID it didn't see
+             during training.
+
+        Uses GPT-2's ``past_key_values`` so cost is O(T) total (one kv
+        update per new token) instead of the O(T^2) re-concat loop.
         """
         B, T_in = input_ids.shape
         device = input_ids.device
+        wte = self.transformer.transformer.wte
 
-        # Build initial input embeddings
-        role_emb_in = self.role_embed(
+        # ── Helpers ─────────────────────────────────────────────────────
+        def _sample(logits_step: torch.Tensor) -> torch.Tensor:
+            logits_step = logits_step / max(temperature, 1e-6)
+            if top_k > 0:
+                topk_vals, _ = torch.topk(logits_step, top_k)
+                threshold = topk_vals[:, -1].unsqueeze(-1)
+                logits_step = logits_step.masked_fill(
+                    logits_step < threshold, float("-inf")
+                )
+            probs = torch.softmax(logits_step, dim=-1)
+            return torch.multinomial(probs, num_samples=1).squeeze(1)
+
+        def _raga_vec() -> torch.Tensor | None:
+            if raga_ids is None or self.raga_embed is None:
+                return None
+            return self.raga_embed(raga_ids).unsqueeze(1)  # (B, 1, D)
+
+        # ── 1. Prefix forward (input tokens, role=0). ───────────────────
+        input_prefix = wte(input_ids)
+        role_input = self.role_embed(
             torch.zeros(B, T_in, dtype=torch.long, device=device)
         )
-        stress_cond = self.stress_proj(stress_embeds)
-        input_embeds = (
-            self.transformer.transformer.wte(input_ids)
-            + role_emb_in
-            + stress_cond
+        cond_input = role_input
+        if stress_embeds is not None:
+            s_in = (stress_embeds[:, :T_in, :]
+                    if stress_embeds.size(1) >= T_in else stress_embeds)
+            cond_input = cond_input + self.stress_proj(s_in)
+        raga_vec = _raga_vec()
+        if raga_vec is not None:
+            cond_input = cond_input + raga_vec
+
+        outputs = self.transformer(
+            inputs_embeds=input_prefix + cond_input,
+            use_cache=True,
+        )
+        past_kv = outputs.past_key_values
+        # target[0] is predicted from the last input position. Shift
+        # convention: training labels[T_in] = target[0], so training's
+        # next-token prediction at position T_in-1 supervises target[0].
+        first_logits = outputs.logits[:, -1, :]
+        prev_token = _sample(first_logits)
+        generated = [prev_token.unsqueeze(1)]
+
+        # ── 2. Autoregressive target loop with KV-cache. ────────────────
+        role_tgt = self.role_embed(
+            torch.ones(B, 1, dtype=torch.long, device=device)
         )
 
-        # Start with a BOS-like token (use token 0 as start)
-        generated = torch.zeros(B, 1, dtype=torch.long, device=device)
-        all_embeds = input_embeds
+        for t in range(1, max_new_tokens):
+            src_idx = min(t - 1, T_in - 1)  # residual aligns to input[t-1]
+            tok_vec = wte(prev_token).unsqueeze(1)  # (B, 1, D)
+            if self.use_input_residual:
+                tok_vec = tok_vec + wte(input_ids[:, src_idx:src_idx + 1])
 
-        for _ in range(max_new_tokens):
-            # Embed the latest generated token with role=1 (target)
-            new_emb = (
-                self.transformer.transformer.wte(generated[:, -1:])
-                + self.role_embed(torch.ones(B, 1, dtype=torch.long, device=device))
+            cond_t = role_tgt
+            if stress_embeds is not None:
+                s_idx = min(t, stress_embeds.size(1) - 1)
+                cond_t = cond_t + self.stress_proj(
+                    stress_embeds[:, s_idx:s_idx + 1, :]
+                )
+            if raga_vec is not None:
+                cond_t = cond_t + raga_vec
+
+            outputs = self.transformer(
+                inputs_embeds=tok_vec + cond_t,
+                past_key_values=past_kv,
+                use_cache=True,
             )
-            all_embeds = torch.cat([all_embeds, new_emb], dim=1)
+            past_kv = outputs.past_key_values
+            prev_token = _sample(outputs.logits[:, -1, :])
+            generated.append(prev_token.unsqueeze(1))
 
-            outputs = self.transformer(inputs_embeds=all_embeds)
-            next_logits = outputs.logits[:, -1, :] / temperature
-
-            # Top-k filtering
-            if top_k > 0:
-                topk_vals, _ = torch.topk(next_logits, top_k)
-                threshold = topk_vals[:, -1].unsqueeze(-1)
-                next_logits[next_logits < threshold] = float("-inf")
-
-            probs = torch.softmax(next_logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1)
-            generated = torch.cat([generated, next_token], dim=1)
-
-        return generated[:, 1:]  # Remove the start token
+        return torch.cat(generated, dim=1)

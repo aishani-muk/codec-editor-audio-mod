@@ -1,0 +1,10 @@
+# Ablation: turn off raga-label conditioning. Tests how much the
+# per-clip raga embedding matters when everything else stays identical.
+
+_base_: "../proposed.yaml"
+
+run_name: "abl_no_raga"
+description: "No raga-label conditioning (raga embedding ablation)"
+
+editor:
+  use_raga_label: false

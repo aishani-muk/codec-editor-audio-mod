@@ -1,16 +1,12 @@
-# ── Proposed pipeline config ──
-# Inherits from base.yaml; overrides listed here.
+# ── Proposed pipeline (May 2026 redesign) ──
+# Primary "proposed" config. Inherits all defaults from base.yaml, which now
+# encode the redesigned choices:
+#   - WavTokenizer speech-75 tokenizer (75 tok/s, vocal-optimised)
+#   - BPE disabled
+#   - Input-aligned residual editor
+#   - Per-clip raga-label embedding
 
 _base_: "base.yaml"
 
-run_name: "proposed_v1"
-description: "WavTokenizer (40tok/s) + codec-BPE + GPT2-small conditional editor"
-
-# BPE is ON
-bpe:
-  enabled: true
-
-# Editor uses the full transformer
-editor:
-  architecture: "gpt2"
-  n_layers: 6
+run_name: "proposed_v2"
+description: "speech-75token + input-aligned residual editor + raga-label"

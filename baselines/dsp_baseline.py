@@ -12,7 +12,7 @@ Effects chain:
 
 Usage:
     python baselines/dsp_baseline.py \
-        --input data/saraga_yaman/ \
+        --input data/saraga_kalyan_thaat/ \
         --output results/baseline_dsp/ \
         --u 0.6
 """

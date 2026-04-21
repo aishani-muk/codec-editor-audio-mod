@@ -10,7 +10,7 @@ This ablates:
 
 Usage:
     python baselines/encodec_mlp_baseline.py \
-        --input data/saraga_yaman/ \
+        --input data/saraga_kalyan_thaat/ \
         --output results/baseline_encodec_mlp/ \
         --u 0.6
 """

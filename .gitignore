@@ -5,6 +5,11 @@ __pycache__/
 dist/
 build/
 *.egg
+.pytest_cache/
+.mypy_cache/
+
+# Transient config artefacts
+configs/_generated/
 
 # Virtual environments
 .venv/
@@ -19,8 +24,10 @@ env/
 
 # Data (large files — download via scripts)
 data/saraga_yaman/
+data/saraga_all_ragas/
 data/saraga_kalyan_thaat/
 data/saraga_hindustani_raw/
+data/test_clips/
 data/paired_edits/
 data/raga_features/
 data/deam/

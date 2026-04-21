@@ -1,0 +1,32 @@
+{
+  "raw_dir": "/fs/classhomes/amukherj/research/saraga1.5_hindustani",
+  "output": "data/saraga_all_ragas",
+  "n_total_candidates": 53,
+  "n_staged": 53,
+  "n_errors": 0,
+  "n_ragas": 21,
+  "per_raga": {
+    "Bhairabi": 5,
+    "Shree": 5,
+    "Marwa": 3,
+    "Todi": 3,
+    "Lalat": 3,
+    "Jog": 3,
+    "Miya malhar": 3,
+    "Malkauns": 2,
+    "Abhogi": 2,
+    "Rageshri": 2,
+    "Ahir bhairav": 2,
+    "Bairagi": 2,
+    "Multani": 2,
+    "Bilaskhani todi": 2,
+    "Dhani": 2,
+    "Bhimpalas": 2,
+    "Hameer": 2,
+    "Ramdasi malhar": 2,
+    "Yaman kalyan": 2,
+    "Gauri": 2,
+    "Bihag": 2
+  },
+  "elapsed_s": 374.3
+}

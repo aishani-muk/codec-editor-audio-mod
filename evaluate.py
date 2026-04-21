@@ -7,6 +7,9 @@ Metrics:
   3. Velocity TV / Jerk RMS — glide smoothness proxies
   4. DEAM Δvalence / Δarousal — emotional shift toward neutral
   5. PESQ (optional) — perceptual audio quality
+  6. Raga-ID preserved — fraction of clips where the raga classifier's
+     prediction is the same for input and output audio. Requires a
+     trained classifier at --raga_checkpoint (PCD or MERT).
 
 Usage:
     # Evaluate proposed pipeline
@@ -15,7 +18,7 @@ Usage:
 
     # Evaluate DSP baseline
     python evaluate.py --baseline dsp --input results/baseline_dsp/ \\
-                       --reference data/saraga_yaman/
+                       --reference data/saraga_kalyan_thaat/
 """
 
 import argparse
@@ -24,41 +27,30 @@ from pathlib import Path
 
 import numpy as np
 import librosa
-from scipy.spatial.distance import jensenshannon
-from scipy.stats import entropy
+
+from evaluation.raga_classifier import RagaPredictor
+from evaluation.pitch import extract_pitch_with_confidence
+from evaluation.tonic import resolve_tonic
+from evaluation.pcd import pcd_jsd
+from evaluation.emotion_regressor import Music2EmoRegressor
 
 
 # ──────────────────── Pitch extraction ────────────────────
 
 def extract_pitch(audio: np.ndarray, sr: int = 24000,
-                  hop_ms: float = 10.0) -> np.ndarray:
-    """
-    Extract pitch track using CREPE or pyin.
+                  hop_ms: float = 10.0) -> tuple[np.ndarray, np.ndarray]:
+    """SOTA pitch extraction via PESTO → CREPE → pyin fallback chain.
+
+    Delegates to ``evaluation.pitch.extract_pitch_with_confidence`` so that
+    every downstream metric (JSD, PCD, tonic drift) uses the same
+    per-frame confidence signal.
 
     Returns:
-        pitch: (T,) array of pitch values in Hz (0 = unvoiced).
+        ``(pitch_hz, confidence)`` — both 1-D, same length.
+        Low-confidence frames already have pitch set to 0.
     """
-    try:
-        import crepe
-        _, pitch, confidence, _ = crepe.predict(
-            audio, sr, step_size=hop_ms, viterbi=True
-        )
-        pitch[confidence < 0.5] = 0  # Mark low-confidence as unvoiced
-        return pitch
-    except ImportError:
-        # Fallback to librosa pyin
-        f0, voiced_flag, _ = librosa.pyin(
-            audio, fmin=50, fmax=800, sr=sr,
-            hop_length=int(sr * hop_ms / 1000)
-        )
-        f0 = np.nan_to_num(f0, nan=0.0)
-        return f0
-
-
-def load_tonic(tonic_path: str) -> float:
-    """Load tonic frequency from a Saraga .tonic file."""
-    with open(tonic_path) as f:
-        return float(f.read().strip())
+    return extract_pitch_with_confidence(audio, sr=sr, hop_ms=hop_ms,
+                                         conf_threshold=0.5)
 
 
 # ──────────────────── Metric computations ────────────────────
@@ -90,27 +82,16 @@ def tonic_drift(pitch_in: np.ndarray, pitch_out: np.ndarray,
     }
 
 
-def pitch_histogram_jsd(pitch_in: np.ndarray, pitch_out: np.ndarray,
-                        tonic_hz: float, n_bins: int = 1200) -> float:
-    """
-    Compute JSD between tonic-normalized, octave-folded pitch histograms.
+def pitch_histogram_jsd(pitch_in: np.ndarray, conf_in: np.ndarray,
+                        pitch_out: np.ndarray, conf_out: np.ndarray,
+                        tonic_hz: float) -> float:
+    """Salience-weighted JSD between tonic-normalised PCDs.
 
-    Lower = better preservation of raga pitch-class distribution.
+    Thin wrapper around ``evaluation.pcd.pcd_jsd`` (Koduri et al. JNMR 2012,
+    §4.2 variant: 1-cent bins, 30-cent Gaussian smoothing, octave-folded,
+    per-frame confidence as salience weight). Lower is better.
     """
-    def to_hist(pitch):
-        voiced = pitch[pitch > 0]
-        if len(voiced) == 0:
-            return np.ones(n_bins) / n_bins
-        cents = 1200 * np.log2(voiced / tonic_hz + 1e-8)
-        folded = cents % 1200
-        hist, _ = np.histogram(folded, bins=n_bins, range=(0, 1200),
-                               density=True)
-        hist += 1e-10  # Avoid zeros
-        return hist / hist.sum()
-
-    P = to_hist(pitch_in)
-    Q = to_hist(pitch_out)
-    return float(jensenshannon(P, Q) ** 2)  # JSD = JS distance squared
+    return pcd_jsd(pitch_in, conf_in, pitch_out, conf_out, tonic_hz)
 
 
 def smoothness_metrics(pitch: np.ndarray, sr: int = 24000,
@@ -141,21 +122,24 @@ def smoothness_metrics(pitch: np.ndarray, sr: int = 24000,
 # ──────────────────── Full evaluation ────────────────────
 
 def evaluate_pair(input_wav: str, output_wav: str, tonic_hz: float,
-                  sr: int = 24000, hop_ms: float = 10.0) -> dict:
+                  sr: int = 24000, hop_ms: float = 10.0,
+                  raga_predictor: "RagaPredictor | None" = None,
+                  emotion_regressor: "Music2EmoRegressor | None" = None
+                  ) -> dict:
     """Evaluate a single (input, output) audio pair."""
     y_in, _ = librosa.load(input_wav, sr=sr, mono=True)
     y_out, _ = librosa.load(output_wav, sr=sr, mono=True)
 
-    pitch_in = extract_pitch(y_in, sr, hop_ms)
-    pitch_out = extract_pitch(y_out, sr, hop_ms)
+    pitch_in,  conf_in  = extract_pitch(y_in,  sr, hop_ms)
+    pitch_out, conf_out = extract_pitch(y_out, sr, hop_ms)
 
     drift = tonic_drift(pitch_in, pitch_out, tonic_hz)
-    jsd = pitch_histogram_jsd(pitch_in, pitch_out, tonic_hz)
+    jsd = pitch_histogram_jsd(pitch_in, conf_in, pitch_out, conf_out, tonic_hz)
 
     smooth_in = smoothness_metrics(pitch_in, sr, hop_ms, tonic_hz)
     smooth_out = smoothness_metrics(pitch_out, sr, hop_ms, tonic_hz)
 
-    return {
+    metrics = {
         **drift,
         "jsd": jsd,
         "velocity_tv_in": smooth_in["velocity_tv"],
@@ -172,14 +156,60 @@ def evaluate_pair(input_wav: str, output_wav: str, tonic_hz: float,
         ),
     }
 
+    if raga_predictor is not None and raga_predictor.available:
+        # Raga classifier: run on raw WAVs (it handles its own SR / resampling).
+        raga_in, r_conf_in = raga_predictor.predict_from_audio(
+            input_wav, tonic_hz=tonic_hz,
+        )
+        raga_out, r_conf_out = raga_predictor.predict_from_audio(
+            output_wav, tonic_hz=tonic_hz,
+        )
+        metrics.update({
+            "input_pred_raga": raga_in,
+            "input_pred_conf": r_conf_in,
+            "output_pred_raga": raga_out,
+            "output_pred_conf": r_conf_out,
+            "raga_id_preserved": bool(raga_in == raga_out),
+        })
+
+    if emotion_regressor is not None and emotion_regressor.available:
+        # Music2Emo: (V, A) on DEAM 1-9 scale + MTG-Jamendo mood tags.
+        shift = emotion_regressor.predict_pair(input_wav, output_wav)
+        metrics.update(shift)
+    return metrics
+
 
 def evaluate_directory(input_dir: str, output_dir: str,
                        tonic_dir: str | None = None,
                        default_tonic: float = 261.63,
-                       results_path: str = "results/eval_results.json"):
+                       results_path: str = "results/eval_results.json",
+                       raga_checkpoint: str | None = None,
+                       use_emotion: bool = False):
     """Evaluate all pairs in matching directories."""
     input_files = sorted(Path(input_dir).glob("*.wav"))
     results = []
+
+    raga_predictor = None
+    if raga_checkpoint:
+        raga_predictor = RagaPredictor(raga_checkpoint)
+        if raga_predictor.available:
+            print(f"  Raga classifier loaded: {raga_checkpoint} "
+                  f"(feature={raga_predictor.feature_type}, "
+                  f"n_classes={len(raga_predictor.vocab)})")
+        else:
+            print(f"  WARNING: raga checkpoint not found at {raga_checkpoint}; "
+                  f"skipping raga-id metric")
+            raga_predictor = None
+
+    emotion_regressor = None
+    if use_emotion:
+        emotion_regressor = Music2EmoRegressor()
+        if emotion_regressor.available:
+            print(f"  Music2Emo regressor available at "
+                  f"{emotion_regressor.MUSIC2EMO_DIR} (will load lazily).")
+        else:
+            print(f"  WARNING: Music2Emo not found; skipping V/A + mood metric")
+            emotion_regressor = None
 
     for in_path in input_files:
         # Find matching output
@@ -190,15 +220,15 @@ def evaluate_directory(input_dir: str, output_dir: str,
             continue
         out_path = out_candidates[0]
 
-        # Load tonic
-        tonic_hz = default_tonic
-        if tonic_dir:
-            tonic_file = Path(tonic_dir) / f"{stem}.tonic"
-            if tonic_file.exists():
-                tonic_hz = load_tonic(str(tonic_file))
-
-        print(f"  Evaluating: {stem} (tonic={tonic_hz:.1f} Hz)")
-        metrics = evaluate_pair(str(in_path), str(out_path), tonic_hz)
+        # Saraga .ctonic.txt → Essentia Gulati → default.
+        tonic_hz, tonic_src = resolve_tonic(
+            str(in_path), stem=stem,
+            tonic_dir=tonic_dir, default_hz=default_tonic,
+        )
+        print(f"  Evaluating: {stem} (tonic={tonic_hz:.1f} Hz, src={tonic_src})")
+        metrics = evaluate_pair(str(in_path), str(out_path), tonic_hz,
+                                raga_predictor=raga_predictor,
+                                emotion_regressor=emotion_regressor)
         metrics["recording"] = stem
         results.append(metrics)
 
@@ -211,6 +241,27 @@ def evaluate_directory(input_dir: str, output_dir: str,
             agg[f"mean_{key}"] = float(np.mean(vals))
             agg[f"std_{key}"] = float(np.std(vals))
 
+        if raga_predictor is not None:
+            preserved = [r["raga_id_preserved"] for r in results
+                         if "raga_id_preserved" in r]
+            if preserved:
+                agg["raga_id_preserved_pct"] = (
+                    100.0 * sum(preserved) / len(preserved)
+                )
+                agg["raga_id_n"] = len(preserved)
+
+        if emotion_regressor is not None:
+            va_rows = [r for r in results if "delta_valence" in r]
+            if va_rows:
+                for key in ("delta_valence", "delta_arousal",
+                            "dist_to_neutral_in", "dist_to_neutral_out"):
+                    agg[f"mean_{key}"] = float(np.mean([r[key] for r in va_rows]))
+                agg["moved_toward_neutral_pct"] = (
+                    100.0 * sum(r["moved_toward_neutral"] for r in va_rows)
+                    / len(va_rows)
+                )
+                agg["emotion_n"] = len(va_rows)
+
         results_data = {
             "per_recording": results,
             "aggregate": agg,
@@ -218,14 +269,25 @@ def evaluate_directory(input_dir: str, output_dir: str,
         }
 
         Path(results_path).parent.mkdir(parents=True, exist_ok=True)
+
+        def _to_py(obj):
+            """JSON encoder hook: downcast numpy scalars to Python scalars."""
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            raise TypeError(f"Not JSON-serializable: {type(obj).__name__}")
+
         with open(results_path, "w") as f:
-            json.dump(results_data, f, indent=2)
+            json.dump(results_data, f, indent=2, default=_to_py)
 
         print(f"\n{'='*50}")
         print(f"Evaluation Summary ({len(results)} recordings)")
         print(f"{'='*50}")
         for k, v in agg.items():
-            print(f"  {k}: {v:.4f}")
+            print(f"  {k}: {v:.4f}" if isinstance(v, float) else f"  {k}: {v}")
         print(f"\nFull results saved to: {results_path}")
     else:
         print("No recordings evaluated.")
@@ -242,7 +304,21 @@ if __name__ == "__main__":
     parser.add_argument("--default_tonic", type=float, default=261.63,
                         help="Default tonic Hz if no .tonic file found")
     parser.add_argument("--results", default="results/eval_results.json")
+    parser.add_argument("--raga_checkpoint", default=None,
+                        help="Path to a raga-classifier checkpoint "
+                             "(e.g. checkpoints/raga_classifier_pcd/model.pt). "
+                             "If provided, logs raga_id_preserved per clip "
+                             "and the aggregate raga_id_preserved_pct.")
+    parser.add_argument("--emotion", action="store_true",
+                        help="Enable Music2Emo-based valence/arousal/mood "
+                             "prediction on input and output. Requires "
+                             "third_party/Music2Emotion/ to be populated. "
+                             "Logs delta_valence, delta_arousal, moods_in, "
+                             "moods_out, moved_toward_neutral per clip and "
+                             "the aggregate moved_toward_neutral_pct.")
     args = parser.parse_args()
 
     evaluate_directory(args.input, args.output, args.tonic_dir,
-                       args.default_tonic, args.results)
+                       args.default_tonic, args.results,
+                       raga_checkpoint=args.raga_checkpoint,
+                       use_emotion=args.emotion)

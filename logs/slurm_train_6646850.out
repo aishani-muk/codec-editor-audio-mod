@@ -1,0 +1,145 @@
+=== GPU ===
+Tue Apr 21 00:45:00 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA RTX A4000               Off |   00000000:C1:00.0 Off |                  Off |
+| 41%   51C    P0             44W /  140W |       1MiB /  16376MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+torch 2.5.1+cu121 cuda True
+Run name: proposed_v1
+Training on: cuda
+Loaded 7920 training pairs (tokens subdir: wavtok_speech75)
+Raga vocabulary (12 ragas + UNK): {'UNK': 0, 'Basanti_Kedar': 1, 'Bhoopali': 2, 'Bihag': 3, 'Hameer': 4, 'Hindol_Pancham': 5, 'Jait_Kalyan': 6, 'Kalyan': 7, 'Kedar': 8, 'Maru_Bihag': 9, 'Nat_Kamod': 10, 'Sudh_Kalyan': 11, 'Yaman': 12}
+Effective output vocab: 4096 (log = 8.318 nats)
+Editor parameters: 21,839,872
+Stress embed parameters: 8,256
+Source-level split: 11 train tracks (5808 pairs), 4 val tracks (2112 pairs)
+Training with random windowed crops of 150 tokens (~2.00s)
+Auxiliary token-histogram JSD loss enabled (weight=0.05)
+
+Starting training for 50000 optimizer steps (grad_accum=2, warmup=500, early_stop_patience=5)...
+  Step 100  lr=6.00e-05  train(rm100): ce=7.5692  ppl=1978.9  info=9.00%  top1=0.34%  top5=1.52%
+  Step 200  lr=1.20e-04  train(rm100): ce=7.0362  ppl=1143.3  info=15.41%  top1=0.42%  top5=2.02%
+  Step 300  lr=1.80e-04  train(rm100): ce=6.9196  ppl=1016.8  info=16.81%  top1=0.40%  top5=1.96%
+  Step 400  lr=2.40e-04  train(rm100): ce=6.8604  ppl=959.2  info=17.52%  top1=0.44%  top5=2.05%
+  Step 500  lr=3.00e-04  train(rm100): ce=6.8644  ppl=961.6  info=17.47%  top1=0.44%  top5=2.08%
+  Step 600  lr=3.00e-04  train(rm100): ce=6.8394  ppl=937.8  info=17.77%  top1=0.43%  top5=2.06%
+  Step 700  lr=3.00e-04  train(rm100): ce=6.8372  ppl=936.0  info=17.80%  top1=0.44%  top5=1.99%
+  Step 800  lr=3.00e-04  train(rm100): ce=6.8277  ppl=926.4  info=17.91%  top1=0.45%  top5=2.04%
+  Step 900  lr=3.00e-04  train(rm100): ce=6.8178  ppl=918.6  info=18.03%  top1=0.44%  top5=2.08%
+  Step 1000  lr=3.00e-04  train(rm100): ce=6.8169  ppl=917.5  info=18.04%  top1=0.44%  top5=2.05%
+  VAL: ce=7.6881  ppl=2182.2  info=7.57%  top1=0.16%  top5=0.84%
+proposed_v1: val_ce last=7.6881 best=7.6881 (info_frac_best=7.57%)  -> checkpoints/proposed_v1/loss_curves.png
+  New best model saved (val_loss=7.6881)
+  Step 1100  lr=3.00e-04  train(rm100): ce=6.8351  ppl=934.1  info=17.82%  top1=0.43%  top5=2.04%
+  Step 1200  lr=3.00e-04  train(rm100): ce=6.8312  ppl=930.7  info=17.87%  top1=0.43%  top5=2.03%
+  Step 1300  lr=3.00e-04  train(rm100): ce=6.8166  ppl=917.1  info=18.05%  top1=0.44%  top5=2.03%
+  Step 1400  lr=3.00e-04  train(rm100): ce=6.8193  ppl=919.1  info=18.02%  top1=0.47%  top5=2.10%
+  Step 1500  lr=3.00e-04  train(rm100): ce=6.8134  ppl=913.8  info=18.09%  top1=0.46%  top5=2.17%
+  Step 1600  lr=3.00e-04  train(rm100): ce=6.8155  ppl=916.0  info=18.06%  top1=0.48%  top5=2.18%
+  Step 1700  lr=3.00e-04  train(rm100): ce=6.8102  ppl=911.0  info=18.12%  top1=0.47%  top5=2.13%
+  Step 1800  lr=2.99e-04  train(rm100): ce=6.8126  ppl=913.1  info=18.10%  top1=0.43%  top5=2.06%
+  Step 1900  lr=2.99e-04  train(rm100): ce=6.8106  ppl=911.9  info=18.12%  top1=0.46%  top5=2.16%
+  Step 2000  lr=2.99e-04  train(rm100): ce=6.8195  ppl=919.8  info=18.01%  top1=0.44%  top5=2.06%
+  Saved checkpoint: checkpoints/proposed_v1/step_2000
+  VAL: ce=7.6165  ppl=2031.5  info=8.43%  top1=0.19%  top5=0.92%
+proposed_v1: val_ce last=7.6165 best=7.6165 (info_frac_best=8.43%)  -> checkpoints/proposed_v1/loss_curves.png
+  New best model saved (val_loss=7.6165)
+  Step 2100  lr=2.99e-04  train(rm100): ce=6.8078  ppl=909.8  info=18.15%  top1=0.48%  top5=2.19%
+  Step 2200  lr=2.99e-04  train(rm100): ce=6.8010  ppl=902.5  info=18.24%  top1=0.48%  top5=2.19%
+  Step 2300  lr=2.99e-04  train(rm100): ce=6.8044  ppl=906.4  info=18.19%  top1=0.44%  top5=2.06%
+  Step 2400  lr=2.99e-04  train(rm100): ce=6.8029  ppl=903.8  info=18.21%  top1=0.45%  top5=2.09%
+  Step 2500  lr=2.99e-04  train(rm100): ce=6.8085  ppl=909.9  info=18.14%  top1=0.46%  top5=2.10%
+  Step 2600  lr=2.99e-04  train(rm100): ce=6.8039  ppl=906.7  info=18.20%  top1=0.50%  top5=2.17%
+  Step 2700  lr=2.99e-04  train(rm100): ce=6.8043  ppl=906.3  info=18.20%  top1=0.44%  top5=2.12%
+  Step 2800  lr=2.98e-04  train(rm100): ce=6.8145  ppl=913.8  info=18.07%  top1=0.45%  top5=2.10%
+  Step 2900  lr=2.98e-04  train(rm100): ce=6.7878  ppl=891.3  info=18.39%  top1=0.49%  top5=2.20%
+  Step 3000  lr=2.98e-04  train(rm100): ce=6.7962  ppl=899.1  info=18.29%  top1=0.45%  top5=2.10%
+  VAL: ce=7.6126  ppl=2023.5  info=8.48%  top1=0.17%  top5=0.88%
+proposed_v1: val_ce last=7.6126 best=7.6126 (info_frac_best=8.48%)  -> checkpoints/proposed_v1/loss_curves.png
+  New best model saved (val_loss=7.6126)
+  Step 3100  lr=2.98e-04  train(rm100): ce=6.8014  ppl=903.0  info=18.23%  top1=0.47%  top5=2.14%
+  Step 3200  lr=2.98e-04  train(rm100): ce=6.8098  ppl=910.2  info=18.13%  top1=0.43%  top5=2.08%
+  Step 3300  lr=2.98e-04  train(rm100): ce=6.8052  ppl=906.6  info=18.18%  top1=0.45%  top5=2.09%
+  Step 3400  lr=2.97e-04  train(rm100): ce=6.7833  ppl=887.0  info=18.45%  top1=0.46%  top5=2.23%
+  Step 3500  lr=2.97e-04  train(rm100): ce=6.8068  ppl=908.3  info=18.17%  top1=0.44%  top5=2.16%
+  Step 3600  lr=2.97e-04  train(rm100): ce=6.7982  ppl=900.6  info=18.27%  top1=0.47%  top5=2.24%
+  Step 3700  lr=2.97e-04  train(rm100): ce=6.7924  ppl=895.5  info=18.34%  top1=0.51%  top5=2.19%
+  Step 3800  lr=2.97e-04  train(rm100): ce=6.7989  ppl=901.2  info=18.26%  top1=0.46%  top5=2.15%
+  Step 3900  lr=2.97e-04  train(rm100): ce=6.7837  ppl=887.3  info=18.44%  top1=0.49%  top5=2.23%
+  Step 4000  lr=2.96e-04  train(rm100): ce=6.8092  ppl=909.6  info=18.14%  top1=0.47%  top5=2.11%
+  Saved checkpoint: checkpoints/proposed_v1/step_4000
+  VAL: ce=7.5981  ppl=1994.5  info=8.65%  top1=0.16%  top5=0.86%
+proposed_v1: val_ce last=7.5981 best=7.5981 (info_frac_best=8.65%)  -> checkpoints/proposed_v1/loss_curves.png
+  New best model saved (val_loss=7.5981)
+  Step 4100  lr=2.96e-04  train(rm100): ce=6.8001  ppl=902.0  info=18.25%  top1=0.48%  top5=2.20%
+  Step 4200  lr=2.96e-04  train(rm100): ce=6.8071  ppl=908.4  info=18.16%  top1=0.44%  top5=2.12%
+  Step 4300  lr=2.96e-04  train(rm100): ce=6.8001  ppl=902.7  info=18.25%  top1=0.47%  top5=2.13%
+  Step 4400  lr=2.95e-04  train(rm100): ce=6.7891  ppl=892.5  info=18.38%  top1=0.48%  top5=2.16%
+  Step 4500  lr=2.95e-04  train(rm100): ce=6.7896  ppl=893.7  info=18.37%  top1=0.49%  top5=2.22%
+  Step 4600  lr=2.95e-04  train(rm100): ce=6.7977  ppl=898.8  info=18.27%  top1=0.47%  top5=2.17%
+  Step 4700  lr=2.95e-04  train(rm100): ce=6.7986  ppl=900.6  info=18.26%  top1=0.45%  top5=2.22%
+  Step 4800  lr=2.94e-04  train(rm100): ce=6.7916  ppl=894.8  info=18.35%  top1=0.47%  top5=2.13%
+  Step 4900  lr=2.94e-04  train(rm100): ce=6.7873  ppl=890.9  info=18.40%  top1=0.48%  top5=2.24%
+  Step 5000  lr=2.94e-04  train(rm100): ce=6.7781  ppl=882.5  info=18.51%  top1=0.45%  top5=2.24%
+  VAL: ce=7.5914  ppl=1981.1  info=8.73%  top1=0.15%  top5=0.84%
+proposed_v1: val_ce last=7.5914 best=7.5914 (info_frac_best=8.73%)  -> checkpoints/proposed_v1/loss_curves.png
+  New best model saved (val_loss=7.5914)
+  Step 5100  lr=2.94e-04  train(rm100): ce=6.7965  ppl=898.7  info=18.29%  top1=0.51%  top5=2.26%
+  Step 5200  lr=2.93e-04  train(rm100): ce=6.8000  ppl=902.0  info=18.25%  top1=0.47%  top5=2.17%
+  Step 5300  lr=2.93e-04  train(rm100): ce=6.7952  ppl=897.4  info=18.30%  top1=0.45%  top5=2.19%
+  Step 5400  lr=2.93e-04  train(rm100): ce=6.7985  ppl=900.5  info=18.27%  top1=0.45%  top5=2.11%
+  Step 5500  lr=2.93e-04  train(rm100): ce=6.8032  ppl=904.8  info=18.21%  top1=0.47%  top5=2.13%
+  Step 5600  lr=2.92e-04  train(rm100): ce=6.7877  ppl=890.2  info=18.40%  top1=0.47%  top5=2.22%
+  Step 5700  lr=2.92e-04  train(rm100): ce=6.8039  ppl=905.9  info=18.20%  top1=0.48%  top5=2.13%
+  Step 5800  lr=2.92e-04  train(rm100): ce=6.7871  ppl=891.4  info=18.40%  top1=0.48%  top5=2.26%
+  Step 5900  lr=2.91e-04  train(rm100): ce=6.7759  ppl=881.9  info=18.54%  top1=0.47%  top5=2.22%
+  Step 6000  lr=2.91e-04  train(rm100): ce=6.7845  ppl=888.1  info=18.43%  top1=0.47%  top5=2.21%
+  Saved checkpoint: checkpoints/proposed_v1/step_6000
+  VAL: ce=7.4950  ppl=1799.0  info=9.89%  top1=0.21%  top5=1.01%
+proposed_v1: val_ce last=7.4950 best=7.4950 (info_frac_best=9.89%)  -> checkpoints/proposed_v1/loss_curves.png
+  New best model saved (val_loss=7.4950)
+  Step 6100  lr=2.91e-04  train(rm100): ce=6.7941  ppl=897.1  info=18.32%  top1=0.48%  top5=2.17%
+  Step 6200  lr=2.90e-04  train(rm100): ce=6.7943  ppl=896.8  info=18.32%  top1=0.46%  top5=2.17%
+  Step 6300  lr=2.90e-04  train(rm100): ce=6.7835  ppl=886.9  info=18.45%  top1=0.45%  top5=2.15%
+  Step 6400  lr=2.90e-04  train(rm100): ce=6.7873  ppl=890.2  info=18.40%  top1=0.48%  top5=2.20%
+  Step 6500  lr=2.89e-04  train(rm100): ce=6.7809  ppl=884.6  info=18.48%  top1=0.49%  top5=2.27%
+  Step 6600  lr=2.89e-04  train(rm100): ce=6.7730  ppl=877.7  info=18.57%  top1=0.47%  top5=2.21%
+  Step 6700  lr=2.89e-04  train(rm100): ce=6.7771  ppl=881.6  info=18.52%  top1=0.49%  top5=2.31%
+  Step 6800  lr=2.88e-04  train(rm100): ce=6.7844  ppl=888.4  info=18.43%  top1=0.47%  top5=2.26%
+  Step 6900  lr=2.88e-04  train(rm100): ce=6.7685  ppl=873.9  info=18.63%  top1=0.52%  top5=2.36%
+  Step 7000  lr=2.87e-04  train(rm100): ce=6.7526  ppl=859.9  info=18.82%  top1=0.51%  top5=2.47%
+  VAL: ce=7.6135  ppl=2025.4  info=8.47%  top1=0.23%  top5=0.98%
+proposed_v1: val_ce last=7.6135 best=7.4950 (info_frac_best=9.89%)  -> checkpoints/proposed_v1/loss_curves.png
+  No val-loss improvement (1/5)
+  Step 7100  lr=2.87e-04  train(rm100): ce=6.7616  ppl=867.9  info=18.71%  top1=0.55%  top5=2.39%
+  Step 7200  lr=2.87e-04  train(rm100): ce=6.7475  ppl=856.0  info=18.88%  top1=0.52%  top5=2.42%
+  Step 7300  lr=2.86e-04  train(rm100): ce=6.7297  ppl=840.8  info=19.09%  top1=0.53%  top5=2.44%
+  Step 7400  lr=2.86e-04  train(rm100): ce=6.7238  ppl=836.8  info=19.16%  top1=0.58%  top5=2.57%
+  Step 7500  lr=2.85e-04  train(rm100): ce=6.7091  ppl=823.1  info=19.34%  top1=0.57%  top5=2.53%
+  Step 7600  lr=2.85e-04  train(rm100): ce=6.7337  ppl=845.0  info=19.04%  top1=0.54%  top5=2.48%
+  Step 7700  lr=2.85e-04  train(rm100): ce=6.7015  ppl=818.0  info=19.43%  top1=0.58%  top5=2.60%
+  Step 7800  lr=2.84e-04  train(rm100): ce=6.6820  ppl=801.9  info=19.67%  top1=0.56%  top5=2.72%
+  Step 7900  lr=2.84e-04  train(rm100): ce=6.6920  ppl=808.8  info=19.55%  top1=0.57%  top5=2.63%
+  Step 8000  lr=2.83e-04  train(rm100): ce=6.6917  ppl=810.2  info=19.55%  top1=0.58%  top5=2.62%
+  Saved checkpoint: checkpoints/proposed_v1/step_8000
+  VAL: ce=7.9794  ppl=2920.1  info=4.07%  top1=0.19%  top5=0.85%
+proposed_v1: val_ce last=7.9794 best=7.4950 (info_frac_best=9.89%)  -> checkpoints/proposed_v1/loss_curves.png
+  No val-loss improvement (2/5)
+  Step 8100  lr=2.83e-04  train(rm100): ce=6.6807  ppl=800.9  info=19.68%  top1=0.57%  top5=2.66%
+  Step 8200  lr=2.82e-04  train(rm100): ce=6.6444  ppl=771.1  info=20.12%  top1=0.64%  top5=2.84%
+  Step 8300  lr=2.82e-04  train(rm100): ce=6.6752  ppl=796.1  info=19.75%  top1=0.56%  top5=2.67%
