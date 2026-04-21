@@ -34,6 +34,8 @@ data/deam/
 data/wesad/
 data/tokens/
 
+# External model weights (large, download via README instructions)
+third_party/
 
 # Checkpoints (large — track via DVC or download)
 checkpoints/*/step_*/
