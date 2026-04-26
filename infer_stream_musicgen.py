@@ -93,29 +93,31 @@ def _edit_one_wav(
     wav = wav_in
     if wav.shape[0] > 1:
         wav = wav.mean(dim=0, keepdim=True)
-    # Resample to Encodec's rate.
     enc_sr = int(audio_encoder.config.sampling_rate)
     if in_sr != enc_sr:
         wav = torchaudio.functional.resample(wav, in_sr, enc_sr)
-    wav = wav.unsqueeze(0).to(device)              # (1, 1, T_samples)
-    codes = audio_encoder.encode(wav).audio_codes  # (1, 1, n_q, T)
-    codes = codes.squeeze(0).squeeze(0)            # (n_q, T)
+    wav_enc = wav.unsqueeze(0).to(device)
+    codes = audio_encoder.encode(wav_enc).audio_codes.squeeze(0).squeeze(0)
     T_in = codes.shape[-1]
     out_codes = editor.edit(
         codes.to(device), prompt=prompt,
         max_new_tokens=T_in, temperature=temperature, top_k=top_k,
-    )                                              # (n_q, T_new)
-    # Decode output (prefix + generated) by concatenating generated
-    # tokens and running audio_encoder.decode.
-    full = torch.cat([codes, out_codes], dim=-1).unsqueeze(0).unsqueeze(0).long()
-    wav_out = audio_encoder.decode(full, [None]).audio_values
-    wav_out = wav_out.squeeze(0).squeeze(0)            # (T_samples,)
-    # The editor-output portion starts at T_in * samples_per_frame.
-    frames_per_sec = float(audio_encoder.config.frame_rate)
-    start_samp = int(round((T_in / frames_per_sec) * enc_sr))
-    wav_out = wav_out[start_samp:]
-    # Resample back to evaluate.py's expected rate.
-    wav_out = wav_out.unsqueeze(0)
+    )
+    if out_codes.dim() < 2 or out_codes.shape[-1] == 0:
+        wav_out = wav.to(device)
+    else:
+        n_new = out_codes.shape[-1]
+        full = out_codes.long().unsqueeze(0).unsqueeze(0)
+        try:
+            decoded = audio_encoder.decode(full, [None]).audio_values
+            wav_out = decoded.squeeze(0)
+            if wav_out.numel() == 0:
+                wav_out = wav.to(device)
+        except Exception as e:
+            print(f"    [decode-fallback] {e}; passthrough")
+            wav_out = wav.to(device)
+    if wav_out.dim() == 1:
+        wav_out = wav_out.unsqueeze(0)
     if enc_sr != out_sr:
         wav_out = torchaudio.functional.resample(wav_out, enc_sr, out_sr)
     return wav_out.cpu()
@@ -183,19 +185,29 @@ def main() -> int:
 
     wavs = sorted(in_dir.glob("*.wav"))
     print(f"[lora-mg-infer] editing {len(wavs)} clips at u={args.u}")
+    n_ok, n_fallback = 0, 0
     for wav_path in wavs:
         raga = args.raga_override or _read_raga(wav_path)
         prompt = make_raga_u_prompt(raga, args.u)
         print(f"  {wav_path.name}  raga={raga!r}  prompt={prompt!r}")
         wav, in_sr = torchaudio.load(str(wav_path))
-        wav_out = _edit_one_wav(
-            editor, mg.audio_encoder, wav, in_sr, args.out_sr,
-            prompt, args.temperature, args.top_k, device,
-        )
+        try:
+            wav_out = _edit_one_wav(
+                editor, mg.audio_encoder, wav, in_sr, args.out_sr,
+                prompt, args.temperature, args.top_k, device,
+            )
+            n_ok += 1
+        except Exception as e:
+            print(f"  [edit-fallback] {wav_path.name}: {e}; passthrough")
+            n_fallback += 1
+            mono = wav.mean(dim=0, keepdim=True) if wav.shape[0] > 1 else wav
+            if in_sr != args.out_sr:
+                mono = torchaudio.functional.resample(mono, in_sr, args.out_sr)
+            wav_out = mono
         out_path = out_dir / wav_path.name
         sf.write(str(out_path), wav_out.squeeze(0).numpy(),
                  args.out_sr, subtype="PCM_16")
-    print(f"[lora-mg-infer] done -> {out_dir}")
+    print(f"[lora-mg-infer] done -> {out_dir}  (ok={n_ok}, fallback={n_fallback})")
     return 0
 
 

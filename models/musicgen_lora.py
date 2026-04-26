@@ -376,5 +376,5 @@ class MusicGenEditor(nn.Module):
             temperature=max(temperature, 1e-4),
             top_k=top_k,
         )
-        new_codes = gen[:, 1 + T_in:].reshape(B, n_q, -1)
+        new_codes = gen[:, T_in:].reshape(B, n_q, -1)
         return new_codes.squeeze(0)
