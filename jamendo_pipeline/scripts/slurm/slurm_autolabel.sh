@@ -9,6 +9,8 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/celtic_autolabel_%j.out
 #SBATCH --error=logs/celtic_autolabel_%j.err
+#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-user=amukherj@umd.edu
 
 # Day 2: tune-type auto-labeling. CPU-parallel with 8 workers.
 

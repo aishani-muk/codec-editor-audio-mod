@@ -9,6 +9,8 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/celtic_precompute_%j.out
 #SBATCH --error=logs/celtic_precompute_%j.err
+#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-user=amukherj@umd.edu
 
 # Day 3: PCD + MERT + CREPE tonic + rhythm sidecars (1 GPU for MERT).
 

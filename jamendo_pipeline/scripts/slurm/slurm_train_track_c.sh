@@ -9,6 +9,8 @@
 #SBATCH --time=10:00:00
 #SBATCH --output=logs/celtic_track_c_%j.out
 #SBATCH --error=logs/celtic_track_c_%j.err
+#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-user=amukherj@umd.edu
 
 # Day 6: train Track C (MusicGen encoder → GPT-2 head hybrid).
 

@@ -9,6 +9,8 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/celtic_mine_%j.out
 #SBATCH --error=logs/celtic_mine_%j.err
+#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-user=amukherj@umd.edu
 
 # Day 3: Music2Emo scoring + calm↔energetic pair mining.
 # CPU-heavy (Music2Emo), needs no GPU.

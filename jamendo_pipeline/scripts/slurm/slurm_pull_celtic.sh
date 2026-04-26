@@ -9,6 +9,8 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/celtic_pull_%j.out
 #SBATCH --error=logs/celtic_pull_%j.err
+#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-user=amukherj@umd.edu
 
 # Day 1: pull Celtic corpus from Jamendo + extract 10-s WAV clips.
 # CPU-only; streams MP3s to /scratch0 and decodes to 24 kHz mono WAVs.
