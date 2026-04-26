@@ -9,7 +9,7 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/celtic_pull_%j.out
 #SBATCH --error=logs/celtic_pull_%j.err
-#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE
 #SBATCH --mail-user=amukherj@umd.edu
 
 # Day 1: pull Celtic corpus from Jamendo + extract 10-s WAV clips.

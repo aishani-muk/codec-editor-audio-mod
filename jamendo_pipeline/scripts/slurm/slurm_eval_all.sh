@@ -9,7 +9,7 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/celtic_eval_%j.out
 #SBATCH --error=logs/celtic_eval_%j.err
-#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE
 #SBATCH --mail-user=amukherj@umd.edu
 
 # Day 7: unified evaluation across all trained tracks × u-levels.

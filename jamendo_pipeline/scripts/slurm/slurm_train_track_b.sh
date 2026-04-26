@@ -9,7 +9,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --output=logs/celtic_track_b_%j.out
 #SBATCH --error=logs/celtic_track_b_%j.err
-#SBATCH --mail-type=END,FAIL,REQUEUE
+#SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE
 #SBATCH --mail-user=amukherj@umd.edu
 
 # Day 5: train Track B (MusicGen-small + LoRA on Celtic natural pairs).
