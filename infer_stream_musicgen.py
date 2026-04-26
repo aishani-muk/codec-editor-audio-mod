@@ -107,7 +107,7 @@ def _edit_one_wav(
     )                                              # (n_q, T_new)
     # Decode output (prefix + generated) by concatenating generated
     # tokens and running audio_encoder.decode.
-    full = torch.cat([codes, out_codes], dim=-1).unsqueeze(0).unsqueeze(0)
+    full = torch.cat([codes, out_codes], dim=-1).unsqueeze(0).unsqueeze(0).long()
     wav_out = audio_encoder.decode(full, [None]).audio_values
     wav_out = wav_out.squeeze(0).squeeze(0)            # (T_samples,)
     # The editor-output portion starts at T_in * samples_per_frame.
