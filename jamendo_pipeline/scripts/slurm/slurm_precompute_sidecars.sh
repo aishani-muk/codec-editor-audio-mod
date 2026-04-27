@@ -23,7 +23,7 @@ fi
 mkdir -p logs
 ln -sfn "celtic_precompute_${SLURM_JOB_ID}.out" logs/celtic_precompute_latest.out
 
-source .venv/bin/activate
+source /scratch0/$USER/celtic-venv/bin/activate
 source jamendo_pipeline/env.sh
 export PYTHONUNBUFFERED=1
 

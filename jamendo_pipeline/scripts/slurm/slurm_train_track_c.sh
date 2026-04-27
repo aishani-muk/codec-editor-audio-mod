@@ -23,7 +23,7 @@ fi
 mkdir -p logs
 ln -sfn "celtic_track_c_${SLURM_JOB_ID}.out" logs/celtic_track_c_latest.out
 
-source .venv/bin/activate
+source /scratch0/$USER/celtic-venv/bin/activate
 source jamendo_pipeline/env.sh
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=1

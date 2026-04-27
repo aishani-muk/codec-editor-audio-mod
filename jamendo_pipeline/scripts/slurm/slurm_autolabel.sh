@@ -24,7 +24,7 @@ mkdir -p logs
 ln -sfn "celtic_autolabel_${SLURM_JOB_ID}.out" logs/celtic_autolabel_latest.out
 ln -sfn "celtic_autolabel_${SLURM_JOB_ID}.err" logs/celtic_autolabel_latest.err
 
-source .venv/bin/activate
+source /scratch0/$USER/celtic-venv/bin/activate
 source jamendo_pipeline/env.sh
 
 export PYTHONUNBUFFERED=1

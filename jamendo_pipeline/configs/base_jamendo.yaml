@@ -1,0 +1,150 @@
+# ── Shared config for the Celtic Jamendo arm ──
+# Mirrors the parent `configs/base.yaml` as closely as possible so the
+# same training code works against this corpus without code changes.
+
+seed: 42
+sample_rate: 24000
+
+# ── WavTokenizer (identical to Saraga arm) ─────────────────────────────
+wavtokenizer:
+  model_name: "novateur/WavTokenizer-large-speech-75token"
+  tokens_per_sec: 75
+  codebook_size: 4096
+  n_codebooks: 1
+
+# BPE disabled — see parent readme for rationale.
+bpe:
+  enabled: false
+
+# ── Stress proxy (same synthetic generator as Saraga) ──────────────────
+stress_proxy:
+  mode: "synthetic"
+  onset_sec: 5.0
+  ramp_sec: 1.0
+  default_u: 0.6
+  default_profile: "ramp"
+  embed_dim: 64
+  n_buckets: 64
+  control_gain: 1.0
+  control_offset: 0.0
+
+# ── Editor defaults (Track A's starting point) ─────────────────────────
+editor:
+  architecture: "gpt2"
+  n_layers: 6
+  n_heads: 8
+  d_model: 512
+  d_ff: 2048
+  dropout: 0.1
+  max_seq_len: 1536
+  window_sec: 2.0
+  hop_sec: 0.5
+  crossfade_sec: 0.1
+  use_input_residual: true
+  # We reuse CodecEditor.raga_embed to carry the tune-type label: vocab
+  # size is 1 + len(TUNE_TYPES) - 1 (UNK shares id=0). Set at runtime.
+  use_raga_label: true
+  train_crop_tokens: 150                # 2 s * 75 tok/s
+  conditioning: "add"                    # "add" | "adaln"
+  raga_drop_p: 0.10                     # CFG conditioning dropout on tune-type
+
+# ── Training ────────────────────────────────────────────────────────────
+training:
+  batch_size: 16
+  gradient_accumulation_steps: 2
+  learning_rate: 3.0e-4
+  weight_decay: 0.01
+  warmup_steps: 500
+  max_steps: 25000
+  eval_steps: 1000
+  save_steps: 2000
+  early_stop_patience: 8
+  fp16: true
+  dataloader_num_workers: 0              # nexusclass cgroup workaround
+  aux_jsd_weight: 0.05
+  # --- New SOTA losses (defaults shared across Track A / C) ---
+  pcd_kl_weight: 0.10
+  anti_collapse_weight: 0.05
+  anti_collapse_min_entropy_frac: 0.5    # hinge below 0.5 * log(V)
+  rhythm_preserve_weight: 0.08
+  mert_perceptual_weight: 0.05
+  mert_perceptual_every_n_steps: 4
+  consistency_weight: 0.03
+  monotonic_u_weight: 0.10
+  monotonic_u_margin: 0.05
+  identity_mix_rate: 0.10
+  cfg_drop_prob: 0.10
+  # --- Training-time SOTA techniques ---
+  ema_decay: 0.999
+  ema_save_best: true
+  curriculum_u:
+    - {until_step: 2000, u_choices: [0.0]}
+    - {until_step: 4000, u_choices: [0.0, 0.6]}
+    - {until_step: 1000000, u_choices: "uniform"}
+  scheduled_sampling:
+    enabled: true
+    max_mix_prob: 0.2
+    ramp_steps: 20000
+  collapse_gate:
+    max_abs_velocity_tv_change_pct: 99.0  # don't save best/ above this
+
+# ── Data paths (Celtic corpus on /scratch0) ───────────────────────────
+# NOTE: these are scratch paths so they don't count against the user's
+# home quota. The Saraga arm keeps its data at `data/` under the repo.
+data:
+  cache_dir: "__env__:JAMENDO_CACHE"     # resolved at runtime from env
+  clips_subdir: "clips"                    # $cache_dir/clips/*.wav
+  tokens_subdir: "tokens/wavtok_speech75"  # $cache_dir/tokens/wavtok_speech75/*.npy
+  pairs_subdir: "pairs"
+  test_clips_subdir: "test_clips"
+  manifest_name: "manifest.jsonl"
+  # For Day 4 training, mix 80% Celtic + 20% Saraga for cross-domain reg:
+  mix_with_saraga: true
+  saraga_manifest: "data/paired_edits_v2/manifest_va_filtered.jsonl"
+  saraga_weight: 0.2
+  # Splits are deterministic by track_id hash (same as Saraga):
+  train_split: 0.85
+  val_split: 0.10
+  test_split: 0.05
+  max_clip_sec: 10.0
+
+# ── Jamendo fetch knobs (Day 1) ────────────────────────────────────────
+jamendo:
+  tags: ["celtic", "irish", "scottish", "folk"]
+  n_tracks: 2000
+  per_tag: 800
+  clips_per_track: 4
+  min_duration_sec: 60
+  max_duration_sec: 600
+
+# ── Tune-type auto-labeling (Day 2) ────────────────────────────────────
+autolabel:
+  analyze_sec: 30                         # look at first 30 s of each MP3
+  min_posterior: 0.60
+  min_tempo_stability: 0.25              # σ/μ threshold for slow_air
+  jig_tempo_bpm: [100, 140]
+  reel_tempo_bpm: [100, 130]
+  hornpipe_tempo_bpm: [110, 135]
+  polka_tempo_bpm: [110, 140]
+  waltz_tempo_bpm: [80, 160]
+  # Minimum clips per class to keep it in the eval (merge rarer classes):
+  min_class_count: 30
+
+# ── Evaluation (Day 7) ─────────────────────────────────────────────────
+evaluation:
+  u_levels: [0.0, 0.3, 0.6, 0.9]
+  bootstrap_iters: 1000
+  bootstrap_ci: 0.95
+  clap_prompts:
+    calm: "calm celtic folk music"
+    energetic: "energetic celtic folk music"
+  fad_backbone: "clap-laion-music"       # fadtk naming
+  mert_model: "m-a-p/MERT-v1-95M"
+  collapse_threshold_pct: 99.5
+
+# ── Checkpointing ──────────────────────────────────────────────────────
+checkpoints:
+  dir: "checkpoints"                      # repo-relative under modelling/
+  prefix: "celtic_"
+  save_best_metric: "val_loss"
+  save_best_mode: "min"

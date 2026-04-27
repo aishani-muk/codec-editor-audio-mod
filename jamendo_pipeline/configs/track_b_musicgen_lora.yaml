@@ -1,0 +1,46 @@
+# Track B — MusicGen-small + PEFT-style LoRA adapter.
+# Uses Celtic tune-type + u prompts in T5, trained on natural pairs only.
+inherits: base_jamendo.yaml
+
+track:
+  name: "track_b"
+  description: >
+    MusicGen-small (~300M params) with a ~3M-param LoRA adapter on the
+    q/k/v/out projections of every decoder attention layer. T5 text
+    conditioning uses "<tune_type> celtic folk, mood calm, intensity
+    {u:.1f}" prompts. Trained on Celtic natural pairs only (no DSP
+    synth and no Saraga mix — MusicGen's prior is already musical).
+
+musicgen:
+  model_id: "facebook/musicgen-small"
+  lora:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    include_self_attn: true
+    include_cross_attn: true
+  audio_prompt_sec: 4.0        # prepend 4 s of input codes as "audio prompt"
+
+training:
+  batch_size: 4                 # MusicGen-small + input prefix is heavy
+  gradient_accumulation_steps: 8
+  learning_rate: 1.0e-4         # standard for LoRA
+  warmup_steps: 200
+  max_steps: 10000
+  eval_steps: 1000
+  save_steps: 2000
+  # Track B does NOT use the Celtic auxiliary losses — MusicGen's
+  # internal EnCodec + delay-pattern handling makes them fragile to
+  # apply. CE on target codes is all we train on.
+  pcd_kl_weight: 0.0
+  anti_collapse_weight: 0.0
+  rhythm_preserve_weight: 0.0
+  consistency_weight: 0.0
+  mert_perceptual_weight: 0.0
+
+checkpoints:
+  dir: "checkpoints"
+  name: "celtic_track_b"
+
+data:
+  mix_with_saraga: false        # override: Celtic-only for Track B
