@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Streaming codec-token editor — combined raga + Celtic demo</title>
+<style>
+body { font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; line-height: 1.55; }
+h1 { font-size: 1.6rem; margin-bottom: .2rem; }
+h2 { font-size: 1.25rem; margin-top: 2.5rem; padding-bottom: .3rem; border-bottom: 2px solid #333; }
+h3 { font-size: 1.05rem; margin-top: 1.5rem; color: #333; }
+.sub { color: #666; margin-bottom: 1.2rem; }
+.row { display: grid; gap: .6rem; align-items: center; padding: .8rem 0; border-bottom: 1px solid #eee; }
+.header { display: grid; gap: .6rem; padding: 0 0 .4rem; font-weight: 600; color: #444; border-bottom: 2px solid #444; }
+.row3 { grid-template-columns: 220px 1fr 1fr 1fr; }
+.row5 { grid-template-columns: 200px 1fr 1fr 1fr 1fr 1fr; }
+.clip { font-weight: 600; }
+.lbl { font-size: .7rem; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .2rem; }
+audio { width: 100%; }
+table { border-collapse: collapse; margin-top: 1rem; width: 100%; }
+td, th { border: 1px solid #ccc; padding: .35rem .55rem; font-size: .85rem; text-align: left; }
+th { background: #f0f0f0; font-weight: 600; }
+.fail { color: #b30000; font-weight: 600; }
+.pass { color: #006633; font-weight: 600; }
+details { margin-top: 1rem; padding: 1rem; background: #fafafa; border-radius: 6px; }
+summary { cursor: pointer; font-weight: 600; }
+code { background: #f0f0f0; padding: .1em .3em; border-radius: 3px; font-size: .9em; }
+.note { color: #555; font-size: .9em; margin-top: .5rem; }
+</style></head><body>
+
+<h1>Streaming codec-token editor for raga and Celtic music</h1>
+<p class="sub">A/B demo combining both research arms in one page. Each clip plays at <strong>24 kHz mono</strong> from <code>pipeline/results/</code> WAVs decoded by the same WavTokenizer + cosine-crossfade overlap-add streaming pipeline. The Saraga DSP demo shows the deterministic baseline; the Celtic Track A demo shows the trained ML editor.</p>
+
+<h2>1. Saraga (Hindustani classical) — DSP back-end</h2>
+<p class="sub">3 raga clips × 2 u(t) profiles. The DSP back-end (parametric EQ + compressor + pitch shift, all conditioned on u(t)) runs through the streaming pipeline at RTF &lt; 0.12. The trained ML editor (<code>editor_v3_lora</code>) is u-blind on this corpus and is deferred to the metrics table below.</p>
+
+<h3>u(t) ramp 0 → 0.8</h3>
+<div class="header row3"><div>raga</div><div>input</div><div>edited (ramp)</div><div>—</div></div>
+<div class="row row3">
+  <div class="clip">Yaman<br><span class="lbl">Bahar Gaud Malhar</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/demo_inputs/yaman_c00.wav"></audio></div>
+  <div><div class="lbl">out</div><audio controls preload="none" src="demo_clips/yaman_ramp.wav"></audio></div>
+  <div></div>
+</div>
+<div class="row row3">
+  <div class="clip">Todi<br><span class="lbl">Kumar Gandharva</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/demo_inputs/todi_c00.wav"></audio></div>
+  <div><div class="lbl">out</div><audio controls preload="none" src="demo_clips/todi_ramp.wav"></audio></div>
+  <div></div>
+</div>
+<div class="row row3">
+  <div class="clip">Shree<br><span class="lbl">Ajoy Chakrabarty</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/demo_inputs/shree_c00.wav"></audio></div>
+  <div><div class="lbl">out</div><audio controls preload="none" src="demo_clips/shree_ramp.wav"></audio></div>
+  <div></div>
+</div>
+
+<h3>u(t) Gaussian pulse, peak 0.9 at t=0.5</h3>
+<div class="header row3"><div>raga</div><div>input</div><div>edited (pulse)</div><div>—</div></div>
+<div class="row row3">
+  <div class="clip">Yaman</div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/demo_inputs/yaman_c00.wav"></audio></div>
+  <div><div class="lbl">out</div><audio controls preload="none" src="demo_clips/yaman_pulse.wav"></audio></div>
+  <div></div>
+</div>
+<div class="row row3">
+  <div class="clip">Todi</div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/demo_inputs/todi_c00.wav"></audio></div>
+  <div><div class="lbl">out</div><audio controls preload="none" src="demo_clips/todi_pulse.wav"></audio></div>
+  <div></div>
+</div>
+<div class="row row3">
+  <div class="clip">Shree</div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/demo_inputs/shree_c00.wav"></audio></div>
+  <div><div class="lbl">out</div><audio controls preload="none" src="demo_clips/shree_pulse.wav"></audio></div>
+  <div></div>
+</div>
+
+<h2>2. Celtic — trained Track A (GPT-2 codec editor)</h2>
+<p class="sub">3 Jamendo Celtic clips × 4 u-levels of the trained <code>celtic_track_a</code> editor. Same <code>CodecEditor</code> architecture as <code>editor_v3</code> on the raga side; trained on Celtic mood pairs (1674 pairs, 25 k steps).</p>
+
+<div class="header row5"><div>clip</div><div>input</div><div>u=0.0</div><div>u=0.3</div><div>u=0.6</div><div>u=0.9</div></div>
+<div class="row row5">
+  <div class="clip">country_guitars_<br>background<br><span class="lbl">jig (m=6)</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/celtic_inputs/country_guitars_background_in.wav"></audio></div>
+  <div><div class="lbl">u=0.0</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.0.wav"></audio></div>
+  <div><div class="lbl">u=0.3</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.3.wav"></audio></div>
+  <div><div class="lbl">u=0.6</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.6.wav"></audio></div>
+  <div><div class="lbl">u=0.9</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.9.wav"></audio></div>
+</div>
+<div class="row row5">
+  <div class="clip">broceliande<br><span class="lbl">reel (m=4)</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/celtic_inputs/broceliande_in.wav"></audio></div>
+  <div><div class="lbl">u=0.0</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.0.wav"></audio></div>
+  <div><div class="lbl">u=0.3</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.3.wav"></audio></div>
+  <div><div class="lbl">u=0.6</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.6.wav"></audio></div>
+  <div><div class="lbl">u=0.9</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.9.wav"></audio></div>
+</div>
+<div class="row row5">
+  <div class="clip">balada_do_tejo<br><span class="lbl">jig (m=6)</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/celtic_inputs/balada_do_tejo_in.wav"></audio></div>
+  <div><div class="lbl">u=0.0</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.0.wav"></audio></div>
+  <div><div class="lbl">u=0.3</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.3.wav"></audio></div>
+  <div><div class="lbl">u=0.6</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.6.wav"></audio></div>
+  <div><div class="lbl">u=0.9</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.9.wav"></audio></div>
+</div>
+
+<h2>3. Headline numbers (bootstrap 95 % CI)</h2>
+
+<h3>Saraga test set (n=30, primary domain)</h3>
+<table>
+<tr><th>system</th><th>ΔA u=0.0</th><th>ΔA u=0.3</th><th>ΔA u=0.6</th><th>ΔA u=0.9</th><th>drift c</th><th>jsd</th><th>vel_tv %</th><th>verdict</th></tr>
+<tr><td><code>baseline_dsp_v3</code></td><td>—</td><td>—</td><td><strong>+0.32</strong></td><td>—</td><td>67.5</td><td>0.027</td><td>+10</td><td class="fail">FAIL (wrong direction)</td></tr>
+<tr><td><code>editor_v3_lora</code> (LoRA-MusicGen)</td><td>−0.05</td><td>−0.05</td><td><strong>−0.05</strong></td><td>−0.05</td><td>1.7</td><td>0.000</td><td>+0.01</td><td class="fail">FAIL (u-collapsed; bit-identical MD5s)</td></tr>
+<tr><td><code>editor_v3</code> (GPT-2 codec editor)</td><td>−0.79</td><td>−0.68</td><td><strong>−1.35</strong></td><td>−1.17</td><td>292</td><td>0.38</td><td>+128</td><td class="fail">FAIL (right direction, breaks raga)</td></tr>
+<tr><td><code>celtic_track_a</code> on Saraga (cross-domain)</td><td>+0.59</td><td>+0.78</td><td><strong>+0.47</strong></td><td>+0.86</td><td>0</td><td>0.021</td><td>+100</td><td class="fail">FAIL (wrong direction; tonic preserved)</td></tr>
+<tr><td>Plan gate target</td><td>—</td><td>—</td><td>≤ −0.40</td><td>—</td><td>≤ 100</td><td>≤ 0.05</td><td>≤ 50</td><td>—</td></tr>
+</table>
+
+<h3>Celtic test set (n=29, cross-domain validation)</h3>
+<table>
+<tr><th>system</th><th>ΔA at u=0.6</th><th>jsd</th><th>vel_tv %</th><th>meter_match</th><th>verdict</th></tr>
+<tr><td><code>celtic_track_a</code></td><td><strong>−1.55</strong></td><td>0.022</td><td>+106</td><td>0.45</td><td class="fail">FAIL (u-collapsed; vel_tv breached)</td></tr>
+<tr><td><code>celtic_track_b</code> (LoRA)</td><td>0.00</td><td>0.000</td><td>0.00</td><td>1.00</td><td class="fail">FAIL (silent passthrough)</td></tr>
+<tr><td><code>celtic_track_c</code> (hybrid)</td><td>0.00</td><td>0.000</td><td>0.00</td><td>1.00</td><td class="note">n/a (no <code>generate()</code> — passthrough by design)</td></tr>
+</table>
+
+<h2>4. What this demo establishes (and what it doesn't)</h2>
+
+<details open>
+<summary>Three failure modes, one infrastructure</summary>
+<ul>
+<li><code>editor_v3_lora</code>: <strong>doesn't edit at all.</strong> Bit-identical MD5s across u ∈ {0.0, 0.3, 0.6, 0.9}. Likely cause: T5 collapses the "intensity 0.x" suffix to nearly identical embeddings.</li>
+<li><code>editor_v3</code>: <strong>edits in the correct direction, breaks raga structure.</strong> ΔA = −1.35 (calms), but drift = 292 cents (3 semitones — a different raga to a listener) and JSD = 0.38 (Yaman becomes Yaman-shaped noise).</li>
+<li><code>celtic_track_a</code> on Saraga: <strong>edits in the wrong direction.</strong> Same architecture as editor_v3, trained on Celtic — produces ΔA = +0.47 on raga (agitates) but ΔA = −1.55 on Celtic (calms). Direction flips across domains.</li>
+<li>DSP baseline on Saraga: also wrong direction (mild). Likely M2E Western-pop bias on Hindustani vocal.</li>
+</ul>
+</details>
+
+<details>
+<summary>What's solid in the deliverable</summary>
+<ol>
+<li><strong>Streaming infrastructure works end-to-end.</strong> WavTokenizer encode → BPE → conditional editor → cosine-crossfade overlap-add. Real-time factor &lt; 0.12 on the demo clips.</li>
+<li><strong>Three trained checkpoints, two domains, identical architecture.</strong> <code>editor_v3</code> (Saraga GPT-2), <code>editor_v3_lora</code> (Saraga LoRA), <code>celtic_track_a</code> (Celtic GPT-2). 199 MB total.</li>
+<li><strong>Cross-domain experiment is honest and informative.</strong> Same model class, two cultural corpora, evaluated on identical test inputs — the failure mode (sign flip) is a real research finding, not a bug.</li>
+<li><strong>Numerical u-embedding clearly beats T5 text-suffix conditioning</strong> for codec editors. Lora is u-blind to the byte; GPT-2 with numerical u has real (non-monotone) u-dependence.</li>
+</ol>
+</details>
+
+<details>
+<summary>What's not solid (gates the v1 plan would have failed)</summary>
+<ol>
+<li>Tonic stability: <code>RESEARCH_GUIDE.md</code> demands &lt; 15 cents (human discrimination threshold). <code>editor_v3</code> produces 292-551 cents drift.</li>
+<li>PCD JSD: target &lt; 0.05. <code>editor_v3</code> produces 0.37-0.43 (7-9× the threshold).</li>
+<li>Velocity-TV: target &lt; 15 % increase. Both ML editors produce +100 % to +141 %.</li>
+<li>Smooth u-modulation: required for continuous neurofeedback. None of the trained editors deliver this — only "edit / no edit" or non-monotone scrambling.</li>
+<li>No raga classifier: v3 PCD-aware classifier was deferred; raga-preservation %% is unfilled.</li>
+</ol>
+</details>
+
+<details>
+<summary>Honest paper framing</summary>
+<p>The pipeline calls for a system that calms raga while preserving tonic + PCD + meend continuity. The <strong>infrastructure to build that system works end-to-end</strong>. The <strong>trained editors do not yet satisfy the cultural-preservation constraints</strong> (drift / JSD too high) and <strong>do not yet provide smooth u-modulation</strong> (only binary edit-or-not, or non-monotone scrambling). Three independent failure modes (no-edit, broken-preservation, wrong-direction) inform the next research step — likely explicit u-magnitude supervision plus a raga-grammar adversarial loss on top of PCD-KL.</p>
+<p>Next-step priority list (estimated effort):</p>
+<ul>
+<li><strong>Fix the M2E direction-flip on Hindustani</strong> (1 day): listener study on 5 raga clips × 4 u-levels — does a human hear the DSP-edited output as calmer or more agitated? If calmer, the metric is wrong, not the editor.</li>
+<li><strong>Explicit u-magnitude supervision</strong> (3 days): triplet pairs (input, half-calmed, fully-calmed) instead of binary (input, calmed); trains the model to produce a continuum, not a binary.</li>
+<li><strong>Raga-grammar adversarial loss</strong> (5 days): train a small raga-grammar discriminator on Saraga and use its gradients to penalize ungrammatical edits. Targets the drift / JSD failure mode of editor_v3.</li>
+<li><strong>Track B / C debugging</strong> (1-2 days each): silent-passthrough on Celtic LoRA and missing <code>generate()</code> on hybrid encoder are recoverable; would round out the architecture-variant story.</li>
+</ul>
+</details>
+
+<p class="note">Full bootstrap-CI tables: <code>results/saraga_eval/</code> and <code>results/celtic_eval_track_*/</code>. Detailed pros/cons writeup: <code>../../modelling/RESULTS.md §4b</code>. Per-clip eval rows are in each eval folder's <code>per_clip.jsonl</code>.</p>
+
+</body></html>

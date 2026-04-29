@@ -1,55 +1,9 @@
-# Python
+modelling/
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
+.venv/
 *.egg-info/
-dist/
-build/
-*.egg
+.DS_Store
 .pytest_cache/
 .mypy_cache/
-
-# Transient config artefacts
-configs/_generated/
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Data (large files — download via scripts)
-data/saraga_yaman/
-data/saraga_all_ragas/
-data/saraga_kalyan_thaat/
-data/saraga_hindustani_raw/
-data/test_clips/
-data/paired_edits/
-data/raga_features/
-data/deam/
-data/wesad/
-data/tokens/
-
-# External model weights (large, download via README instructions)
-third_party/
-
-# Checkpoints (large — track via DVC or download)
-checkpoints/*/step_*/
-checkpoints/*/best/
-!checkpoints/.gitkeep
-
-# Results (regenerable)
-results/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-wandb/
-runs/

@@ -1,0 +1,63 @@
+# Rescue-v3 Day 3 Track B — LoRA fine-tune of MusicGen-small on mined
+# natural pairs. Not inherited from base.yaml because the pipeline is
+# different enough (no WavTokenizer, no stress_embed, text conditioning
+# via T5) that sharing a parent would mostly add ignored keys.
+#
+# Launch:
+#   python train_lora_musicgen.py \
+#       --config   configs/ablations/editor_v3_lora.yaml \
+#       --run_name editor_v3_lora
+
+seed: 42
+
+musicgen:
+  # facebook/musicgen-small: 300M decoder + Encodec-32k (4 codebooks at
+  # 50 Hz, codebook size 2048) + T5-base text encoder. Largest model
+  # that reliably fits LoRA fine-tuning on a single 16 GB GPU.
+  model_name: "facebook/musicgen-small"
+  # LoRA adapter shape. r=16, alpha=32 gives an effective 2.0 scaling
+  # and ~3 M trainable params (the plan's target). dropout helps
+  # generalisation on the small natural-pair corpus.
+  lora:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    include_self_attn: true
+    include_cross_attn: true
+
+data:
+  pairs_dir: "data/paired_natural"
+  tokens_dir: "data/tokens_natural_encodec"     # produced by
+                                                # scripts/tokenize_encodec_natural.py
+  train_split: 0.85
+  max_frames: 500                               # 10 s at 50 Hz Encodec rate
+  # Belt-and-suspenders: exclude held-out tracks by substring on
+  # track_stem. (They're already skipped at mining time.)
+  held_out_tracks:
+    - "Raag_Yaman__Raag_Yaman"
+    - "Raag_Todi__Raag_Todi"
+    - "Raga_Shree___Khayal"
+
+training:
+  batch_size: 2                                 # Encodec-32k codes are
+                                                # n_q=4 × 500 per side;
+                                                # MusicGen-small fits ~B=2
+                                                # on a 16 GB GPU at fp16.
+  gradient_accumulation_steps: 8                # effective batch = 16
+  learning_rate: 2.0e-4                         # LoRA-standard LR
+  weight_decay: 0.01
+  warmup_steps: 200
+  max_steps: 8000
+  eval_steps: 500
+  save_steps: 2000
+  fp16: true
+  dataloader_num_workers: 0                     # nexusclass cgroup limit
+
+  # Val-entropy gate (mirrors the Track A gate: if predicted-token
+  # entropy < 0.2 * log V at eval, best/ is not saved). MusicGen's
+  # natural entropy floor is around 0.4-0.5 * log V on musical audio,
+  # so 0.2 catches only clear collapse.
+  val_entropy_gate: 0.2
+
+checkpoints:
+  dir: "checkpoints"

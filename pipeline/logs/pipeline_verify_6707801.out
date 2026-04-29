@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'pedalboard'
+/var/spool/slurm/slurmd.spool/job6707801/slurm_script: line 4: pip: command not found

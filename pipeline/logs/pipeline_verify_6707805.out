@@ -1,0 +1,29 @@
+=== package versions ===
+  torch: 2.6.0+cu124
+  librosa: 0.11.0
+  soundfile: 0.13.1
+  pedalboard: 0.9.22
+  numpy: 1.26.4
+
+=== internal imports ===
+  OK  baselines.dsp_baseline
+  OK  demo.runner
+  OK  demo.profiles
+  OK  models.codec_editor
+  OK  models.musicgen_lora
+  OK  models.stress_proxy
+  OK  tokenization.encode_wavtokenizer
+  FAIL evaluation.emotion_regressor: ModuleNotFoundError: No module named 'evaluation.deam_regressor'
+
+=== regenerate_demo.py end-to-end ===
+  yaman  ramp   ok=True  rtf=0.034  -> yaman_ramp.wav
+  yaman  pulse  ok=True  rtf=0.019  -> yaman_pulse.wav
+  todi   ramp   ok=True  rtf=0.033  -> todi_ramp.wav
+  todi   pulse  ok=True  rtf=0.019  -> todi_pulse.wav
+  shree  ramp   ok=True  rtf=0.033  -> shree_ramp.wav
+  shree  pulse  ok=True  rtf=0.019  -> shree_pulse.wav
+
+wrote /fs/classhomes/amukherj/research/798/pipeline/results/ab_demo.html
+open  file:///fs/classhomes/amukherj/research/798/pipeline/results/ab_demo.html  in a browser
+
+  exit code: 0

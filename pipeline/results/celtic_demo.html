@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Celtic demo — Track A editor across u-levels</title>
+<style>
+body { font-family: system-ui, -apple-system, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; line-height: 1.5; }
+h1 { font-size: 1.5rem; margin-bottom: .2rem; }
+.sub { color: #666; margin-bottom: 1.5rem; }
+.row, .header { display: grid; grid-template-columns: 220px 1fr 1fr 1fr 1fr 1fr; gap: .6rem; align-items: center; padding: .8rem 0; border-bottom: 1px solid #eee; }
+.header { font-weight: 600; color: #444; border-bottom: 2px solid #444; padding-bottom: .5rem; }
+.clip { font-weight: 600; }
+.lbl { font-size: .7rem; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .2rem; }
+audio { width: 100%; }
+details { margin-top: 2rem; padding: 1rem; background: #fafafa; border-radius: 6px; }
+summary { cursor: pointer; font-weight: 600; }
+code { background: #f0f0f0; padding: .1em .3em; border-radius: 3px; font-size: .9em; }
+table { border-collapse: collapse; margin-top: 1rem; }
+td, th { border: 1px solid #ccc; padding: .3rem .6rem; font-size: .9rem; }
+th { background: #f0f0f0; }
+</style></head><body>
+<h1>Celtic Track A editor — A/B at u ∈ {0.0, 0.3, 0.6, 0.9}</h1>
+<p class="sub">Three Jamendo Celtic clips (10 s, 24 kHz) edited by the trained celtic_track_a GPT-2 codec editor at four u-levels. Bootstrap-CI summaries are in <code>celtic_eval_track_a/u*/summary.json</code>; the full <code>celtic_panels.png</code> and <code>celtic_ab_pairs.html</code> are in this folder.</p>
+
+<div class="header"><div>clip</div><div>input</div><div>u=0.0</div><div>u=0.3</div><div>u=0.6</div><div>u=0.9</div></div>
+
+<div class="row">
+  <div class="clip">country_guitars_<br>background<br><span class="lbl">jig (m=6)</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/celtic_inputs/country_guitars_background_in.wav"></audio></div>
+  <div><div class="lbl">u=0.0</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.0.wav"></audio></div>
+  <div><div class="lbl">u=0.3</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.3.wav"></audio></div>
+  <div><div class="lbl">u=0.6</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.6.wav"></audio></div>
+  <div><div class="lbl">u=0.9</div><audio controls preload="none" src="celtic_demo_clips/country_guitars_background_u0.9.wav"></audio></div>
+</div>
+
+<div class="row">
+  <div class="clip">broceliande<br><span class="lbl">reel (m=4)</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/celtic_inputs/broceliande_in.wav"></audio></div>
+  <div><div class="lbl">u=0.0</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.0.wav"></audio></div>
+  <div><div class="lbl">u=0.3</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.3.wav"></audio></div>
+  <div><div class="lbl">u=0.6</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.6.wav"></audio></div>
+  <div><div class="lbl">u=0.9</div><audio controls preload="none" src="celtic_demo_clips/broceliande_u0.9.wav"></audio></div>
+</div>
+
+<div class="row">
+  <div class="clip">balada_do_tejo<br><span class="lbl">jig (m=6)</span></div>
+  <div><div class="lbl">in</div><audio controls preload="none" src="../data/celtic_inputs/balada_do_tejo_in.wav"></audio></div>
+  <div><div class="lbl">u=0.0</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.0.wav"></audio></div>
+  <div><div class="lbl">u=0.3</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.3.wav"></audio></div>
+  <div><div class="lbl">u=0.6</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.6.wav"></audio></div>
+  <div><div class="lbl">u=0.9</div><audio controls preload="none" src="celtic_demo_clips/balada_do_tejo_u0.9.wav"></audio></div>
+</div>
+
+<details>
+<summary>Headline numbers (n=29, bootstrap 95% CI)</summary>
+<table>
+<tr><th>track</th><th>u</th><th>ΔA</th><th>ΔV</th><th>vel_TV %</th><th>meter_match</th><th>rhythm_jsd</th></tr>
+<tr><td>celtic_track_a</td><td>0.0</td><td>−1.55 [−1.94, −1.16]</td><td>−1.92 [−2.28, −1.56]</td><td>+105 [+65, +150]</td><td>0.45</td><td>0.27</td></tr>
+<tr><td>celtic_track_a</td><td>0.3</td><td>−1.65 [−2.02, −1.27]</td><td>−2.00 [−2.34, −1.64]</td><td>+107 [+68, +148]</td><td>0.45</td><td>0.27</td></tr>
+<tr><td>celtic_track_a</td><td>0.6</td><td>−1.56 [−1.94, −1.16]</td><td>−2.01 [−2.39, −1.63]</td><td>+106 [+66, +148]</td><td>0.45</td><td>0.27</td></tr>
+<tr><td>celtic_track_a</td><td>0.9</td><td>−1.59 [−1.96, −1.24]</td><td>−1.90 [−2.25, −1.58]</td><td>+108 [+69, +149]</td><td>0.45</td><td>0.27</td></tr>
+</table>
+<p><strong>Read:</strong> ΔA ≈ −1.55 across all u — the editor calms aggressively (clears the |ΔA| ≤ −0.40 gate) but is u-blind: the magnitude of the edit doesn't depend on u. Velocity-TV doubles (gate target ≤ 50%) and meter retention is 45%, so structural preservation is weak. Track B and C produced near-passthrough outputs and are reported as separate failure modes in <code>RESULTS.md</code>.</p>
+</details>
+
+<details>
+<summary>What is u(t)?</summary>
+<p>u ∈ [0, 1] is the stress-proxy intensity. u=0 is intended as passthrough; u=1 is maximum calming edit. In a deployed system u(t) is driven by a physiological signal (EEG/HRV, e.g. via WESAD-trained classifier). For these demo clips, u is a scalar held constant for the whole clip. The editor was trained to honour u, but the cross-clip pattern shown here suggests it learned a single canonical edit and applies it regardless of u.</p>
+</details>
+
+</body></html>

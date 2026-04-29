@@ -1,0 +1,32 @@
+host=tron33.umiacs.umd.edu
+Filesystem                  Size  Used Avail Use% Mounted on
+/dev/mapper/vol00-scratch0  146G   18G  128G  13% /scratch0
+---jamendo dirs---
+total 3324
+drwxr-xr-x. 10 amukherj amukherj    4096 Apr 27 02:12 .
+drwxr-xr-x.  4 amukherj amukherj      40 Apr 26 21:10 ..
+-rw-r--r--.  1 amukherj amukherj  622687 Apr 26 18:04 celtic_tracks_metadata.jsonl
+drwxr-xr-x.  2 amukherj amukherj 2052096 Apr 27 01:09 clips
+drwxr-xr-x.  2 amukherj amukherj       6 Apr 26 17:51 logs
+drwxr-xr-x.  2 amukherj amukherj   98304 Apr 26 19:50 mp3
+drwxr-xr-x.  2 amukherj amukherj      70 Apr 27 01:47 pairs
+drwxr-xr-x.  2 amukherj amukherj       6 Apr 26 17:51 sidecars
+drwxr-xr-x.  2 amukherj amukherj   12288 Apr 27 02:34 test_clips
+drwxr-xr-x.  4 amukherj amukherj      53 Apr 27 04:12 tokens
+drwxr-xr-x.  3 amukherj amukherj      29 Apr 27 01:16 tokens_test
+-rw-r--r--.  1 amukherj amukherj  196736 Apr 27 02:11 token_to_pcd.npy
+-rw-r--r--.  1 amukherj amukherj   82048 Apr 27 02:12 token_to_rhythm.npy
+---file counts---
+clips: 25826
+mp3: 1614
+pairs: 3
+sidecars: 0
+tokens: 2
+test_clips: 117
+---key files---
+/scratch0/amukherj/jamendo/clips/autolabel_summary.json
+/scratch0/amukherj/jamendo/clips/manifest.jsonl
+/scratch0/amukherj/jamendo/pairs/pairs.jsonl
+/scratch0/amukherj/jamendo/test_clips/manifest.jsonl
+---celtic-venv on tron33?---
+/scratch0/amukherj/celtic-venv/bin/python

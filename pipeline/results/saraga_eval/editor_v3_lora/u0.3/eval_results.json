@@ -1,0 +1,45 @@
+{
+  "per_recording": [
+    {
+      "tonic_in_hz": 152.596923828125,
+      "tonic_out_hz": 155.5635223388672,
+      "drift_hz": 2.9665985107421875,
+      "drift_cents": 33.33354949951172,
+      "jsd": 0.2745594298438046,
+      "velocity_tv_in": 1727.4970703125,
+      "velocity_tv_out": 1275.5328369140625,
+      "jerk_rms_in": 1248088.25,
+      "jerk_rms_out": 828399.25,
+      "velocity_tv_change_pct": -26.162952423095703,
+      "jerk_rms_change_pct": -33.626548767089844,
+      "recording": "yaman_dadarkar"
+    },
+    {
+      "tonic_in_hz": 138.59188842773438,
+      "tonic_out_hz": 184.99720764160156,
+      "drift_hz": 46.40531921386719,
+      "drift_cents": 499.9928283691406,
+      "jsd": 0.5232702505546823,
+      "velocity_tv_in": 11708.107421875,
+      "velocity_tv_out": 1210.604736328125,
+      "jerk_rms_in": 6911571.0,
+      "jerk_rms_out": 745818.375,
+      "velocity_tv_change_pct": -89.66011810302734,
+      "jerk_rms_change_pct": -89.20913696289062,
+      "recording": "yaman_ganguli"
+    }
+  ],
+  "aggregate": {
+    "mean_drift_cents": 266.6631774902344,
+    "std_drift_cents": 233.3296356201172,
+    "mean_drift_hz": 24.685958862304688,
+    "std_drift_hz": 21.7193603515625,
+    "mean_jsd": 0.3989148401992435,
+    "std_jsd": 0.12435541035543887,
+    "mean_velocity_tv_change_pct": -57.911537170410156,
+    "std_velocity_tv_change_pct": 31.74858283996582,
+    "mean_jerk_rms_change_pct": -61.417842864990234,
+    "std_jerk_rms_change_pct": 27.79129409790039
+  },
+  "n_recordings": 2
+}

@@ -1,0 +1,4 @@
+  File "<string>", line 6
+    try: x=__import__(m); print(f"  {m} {getattr(x,\"__version__\", \"?\")}")
+                                                                            ^
+SyntaxError: f-string expression part cannot include a backslash

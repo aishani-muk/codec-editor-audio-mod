@@ -1,0 +1,32 @@
+checkpoints:
+  dir: checkpoints
+data:
+  held_out_tracks:
+  - Raag_Yaman__Raag_Yaman
+  - Raag_Todi__Raag_Todi
+  - Raga_Shree___Khayal
+  max_frames: 500
+  pairs_dir: data/paired_natural
+  tokens_dir: data/tokens_natural_encodec
+  train_split: 0.85
+musicgen:
+  lora:
+    alpha: 32
+    dropout: 0.05
+    include_cross_attn: true
+    include_self_attn: true
+    r: 16
+  model_name: facebook/musicgen-small
+seed: 42
+training:
+  batch_size: 2
+  dataloader_num_workers: 0
+  eval_steps: 500
+  fp16: true
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0002
+  max_steps: 8000
+  save_steps: 2000
+  val_entropy_gate: 0.2
+  warmup_steps: 200
+  weight_decay: 0.01
