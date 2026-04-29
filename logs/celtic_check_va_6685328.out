@@ -1,2 +1,0 @@
-  File "<stdin>", line 23
-SyntaxError: f-string expression part cannot include a backslash
