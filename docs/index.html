@@ -1,0 +1,527 @@
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codec-token editor for music affect modulation</title>
+    <meta name="description" content="A real-time streaming pipeline that edits audio codec tokens under a continuous control signal, evaluated on Hindustani raga (Saraga) and Celtic folk (Jamendo).">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <meta name="robots" content="all">
+    <meta content="en_EN" property="og:locale">
+    <meta content="website" property="og:type">
+    <meta content="Codec-token editor for music affect modulation" property="og:title">
+    <meta content="Real-time codec-token editing under a continuous u(t) control signal — evaluated on Hindustani raga (primary) and Celtic folk (cross-domain)." property="og:description">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="Codec-token editor for music affect modulation: streaming codec edits under a continuous control signal, with bootstrap-CI evaluation on Hindustani raga and Celtic folk.">
+
+    <link rel="stylesheet" type="text/css" media="all" href="assets/stylesheets/main_free.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="clarity/clarity.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/foundation.min.css">
+    <link href="assets/fontawesome-free-7.2.0-web/css/all.min.css" rel="stylesheet">
+    <style>
+      div.container.blog ol.references { list-style: none; counter-reset: ref; padding-left: 0; }
+      div.container.blog ol.references li { counter-increment: ref; padding: 0; }
+      div.container.blog ol.references li p.text {
+          padding-left: 2.4em;
+          text-indent: -2.4em;
+          padding-top: 0.6vh;
+          padding-bottom: 0.6vh;
+      }
+      div.container.blog ol.references li p.text::before {
+          content: "[" counter(ref) "]\00a0\00a0";
+          font-weight: 600;
+      }
+    </style>
+    <script src="assets/scripts/navbar.js"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            "HTML-CSS": { scale: 95, fonts: ["Gyre-Pagella"], imageFont: null, undefinedFamily: "'Arial Unicode MS', cmbright" },
+            tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]], processEscapes: true }
+        });
+    </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+    <div class="container blog" id="first-content"
+         style="background: linear-gradient(90deg, hsla(228, 68%, 90%, 1) 0%, hsla(200, 82%, 91%, 1) 100%);">
+        <div class="blog-title no-cover">
+            <div class="blog-intro">
+                <div>
+                    <h1 class="title">Codec-token editor for music affect modulation</h1>
+                    <p class="author">Aishani Mukherjee &nbsp;·&nbsp; University of Maryland</p>
+                    <p class="abstract">
+                        A real-time streaming pipeline (RTF&nbsp;&lt;&nbsp;0.12) that edits discrete audio codec tokens
+                        under a continuous control signal&nbsp;$u(t)\in[0,1]$, evaluated on Hindustani raga (Saraga,
+                        primary domain) and Celtic folk (MTG-Jamendo, cross-domain). Three editor variants share one
+                        architecture and surface three distinct conditioning patterns: passthrough, aggressive
+                        metric-direction edits with spectral drift, and a cross-domain sign-flip in the perceived
+                        arousal score. All systems are quantified with bootstrap-CI metrics on $n=30$ (Saraga) and
+                        $n=29$ (Celtic) test clips.
+                    </p>
+                </div>
+
+                <div class="info">
+                    <div>
+                        <a href="https://github.com/aishani-muk/low-latency-audio-mod" class="button icon" style="background-color: rgba(255, 255, 255, 0.4); margin-bottom: 0;">Code <i class="fa-solid fa-code"></i></a>
+                        <a href="demo.html" class="button icon" style="background-color: rgba(255, 255, 255, 0.4); margin-bottom: 0;">Audio demos <i class="fa-solid fa-music"></i></a>
+                        <a href="https://github.com/aishani-muk/low-latency-audio-mod/tree/main/pipeline/results/saraga_eval" class="button icon" style="background-color: rgba(255, 255, 255, 0.4); margin-bottom: 0;">CI tables <i class="fa-solid fa-table"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container blog main first" id="blog-main">
+        <h1>Overview</h1>
+        <p class="text">
+            The pipeline takes an input waveform, encodes it to a discrete token stream using
+            <a href="https://github.com/jishengpeng/WavTokenizer">WavTokenizer</a>, applies a conditional sequence
+            edit under a scalar control&nbsp;$u(t)$, and decodes back to audio with cosine-crossfade overlap-add.
+            The control&nbsp;$u(t)$ is intended to act as a continuous "affect knob" — small values should leave
+            the signal untouched and larger values should push the output toward a calmer perceived character,
+            without destroying the melodic and rhythmic content of the input.
+        </p>
+
+        <p class="text">
+            Three editor variants are trained and evaluated on the same architecture class, across two cultural
+            corpora:
+        </p>
+
+        <ul>
+            <li><p class="text"><code>editor_v3</code> — Saraga-trained GPT-2 codec editor (87&nbsp;MB), numerical&nbsp;$u$-embedding.</p></li>
+            <li><p class="text"><code>editor_v3_lora</code> — Saraga-trained LoRA adapter on a frozen MusicGen-small (25&nbsp;MB), text-prompted&nbsp;$u$.</p></li>
+            <li><p class="text"><code>celtic_track_a</code> — Celtic-trained GPT-2 codec editor (87&nbsp;MB), same code path as <code>editor_v3</code>.</p></li>
+        </ul>
+
+        <p class="text">
+            Because <code>editor_v3</code> and <code>celtic_track_a</code> share an architecture
+            (<code>models/codec_editor.py::CodecEditor</code>) and differ only in training corpus, the cross-domain
+            comparison is on <em>identical model code</em>. The third arm, <code>editor_v3_lora</code>, isolates the
+            effect of conditioning <em>type</em> (text-suffix prompt vs. numerical embedding) on otherwise comparable
+            backbones.
+        </p>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Highlights</h1>
+
+        <ul>
+            <li><p class="text">End-to-end streaming pipeline runs at RTF&nbsp;&lt;&nbsp;0.12 on the demo clips
+                — about $8\times$ faster than playback.</p></li>
+            <li><p class="text">Three trained editors, two cultural corpora, one architecture class — the
+                cross-domain comparison is on identical model code.</p></li>
+            <li><p class="text">Numerical&nbsp;$u$-embedding outperforms T5 text-suffix conditioning for the
+                "produce any detectable edit at all" criterion.</p></li>
+            <li><p class="text">The cross-domain comparison surfaces a sign-flip in the M2E arousal score
+                between Hindustani vocal and Celtic folk — concrete next step is a small listener study to
+                settle whether it reflects an acoustic artefact or a domain bias of the arousal scorer.</p></li>
+        </ul>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Method</h1>
+
+        <h2>Streaming pipeline</h2>
+        <p class="text">
+            The full audio path is shown below. Encoding runs at 24&nbsp;kHz with WavTokenizer's 40&nbsp;tok/s,
+            single-codebook variant; the token stream is BPE-compressed before reaching the editor and decompressed
+            after. Crossfading at the chunk boundary keeps the output continuous in the streaming setting.
+        </p>
+
+<pre><code class="plaintext">  waveform 24kHz
+       │
+       ▼
+  WavTokenizer encode  ──▶  BPE compress  ──▶  conditional editor (u-conditioned)
+                                                       │
+                                                       ▼
+                                          BPE decompress  ──▶  WavTokenizer decode
+                                                                       │
+                                                                       ▼
+                                                        cosine-crossfade overlap-add
+                                                                       │
+                                                                       ▼
+                                                                  edited 24kHz</code></pre>
+
+        <h2>Conditioning</h2>
+        <p class="text">
+            Two conditioning routes are compared on the same input/output token interface:
+        </p>
+        <ul>
+            <li><p class="text"><b>Numerical&nbsp;$u$-embedding (codec editor).</b> $u\in[0,1]$ is bucketed,
+                projected to a 64-dim vector, and added position-wise to every token embedding. The editor
+                receives a strong, discriminating conditioning signal at every step.</p></li>
+            <li><p class="text"><b>T5 text-suffix prompt (LoRA-MusicGen).</b> $u$ is rendered as a textual suffix
+                ("<code>... intensity 0.6</code>") and passed through MusicGen's frozen T5 encoder. The trainable
+                LoRA adapter (~3&nbsp;M parameters) sees this as part of the cross-attention key/value stream.</p></li>
+        </ul>
+
+        <p class="text">
+            On Saraga, the numerical route produces measurable edits whose direction matches the metric target, while
+            the text-suffix route produces bit-identical output across $u\in\{0.0, 0.3, 0.6, 0.9\}$ — the empirical
+            evidence is that T5 collapses the "intensity 0.x" suffix to near-identical embeddings, so the LoRA never
+            receives a discriminating signal.
+        </p>
+
+        <h2>Three editor variants</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead class="center">
+                    <tr>
+                        <th>Variant</th>
+                        <th>Backbone</th>
+                        <th>Conditioning</th>
+                        <th>Training corpus</th>
+                        <th>Size</th>
+                    </tr>
+                </thead>
+                <tbody class="center">
+                    <tr>
+                        <td><code>editor_v3</code></td>
+                        <td>GPT-2 (6L $\times$ 8H $\times$ 512d)</td>
+                        <td>Numerical $u$-embed</td>
+                        <td>Saraga (Hindustani vocal)</td>
+                        <td>87 MB</td>
+                    </tr>
+                    <tr>
+                        <td><code>editor_v3_lora</code></td>
+                        <td>MusicGen-small + LoRA ($r=16$, $\alpha=32$)</td>
+                        <td>T5 text-suffix prompt</td>
+                        <td>Saraga (Hindustani vocal)</td>
+                        <td>25 MB</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_a</code></td>
+                        <td>GPT-2 (6L $\times$ 8H $\times$ 512d)</td>
+                        <td>Numerical $u$-embed</td>
+                        <td>MTG-Jamendo (Celtic folk)</td>
+                        <td>87 MB</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Evaluation metrics</h1>
+
+        <p class="text">
+            All metrics are aggregated with 1000-sample percentile bootstrap CIs at the clip level, on
+            held-out test clips ($n=30$ for Saraga, $n=29$ for Celtic). Plan-gate targets at $u=0.6$ are
+            $\Delta A\le -0.40$, drift&nbsp;$\le$&nbsp;100&nbsp;c, JSD&nbsp;$\le$&nbsp;0.05, $|\text{vel\_TV}|\le 50\%$.
+        </p>
+
+        <ul>
+            <li><p class="text"><b>$\Delta A$ (M2E arousal change).</b> The output is scored by a
+                <a href="https://github.com/PRamoneda/m2e">Music2Emotion</a> regressor on the DEAM 1–9 arousal
+                scale; we report $\Delta A=\text{score}(\text{out})-\text{score}(\text{in})$. Negative $\Delta A$
+                means the output reads as <em>calmer</em> to the scorer.</p></li>
+            <li><p class="text"><b>Tonic drift (cents).</b> Detected fundamental of the output minus that of the
+                input, in cents (100 c $=$ 1 semitone). Captures whether the tonal centre is preserved.</p></li>
+            <li><p class="text"><b>Pitch-class JSD.</b> Jensen–Shannon divergence between input and output 12-bin
+                pitch-class distributions, with confidence-weighted PESTO/CREPE pitches and 30-cent smoothing
+                <a href="#refs">(Koduri et&nbsp;al., 2012)</a>. Captures preservation of melodic content.</p></li>
+            <li><p class="text"><b>Velocity-TV change (%).</b> Total variation of the frame-energy envelope, $\%$
+                change input&nbsp;$\to$&nbsp;output. Captures how aggressively the rhythm/dynamics envelope is
+                altered.</p></li>
+            <li><p class="text"><b>Meter retention.</b> Fraction of clips whose detected downbeat track is
+                preserved (Celtic-only, evaluated against the madmom DBN downbeat tracker).</p></li>
+        </ul>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Results</h1>
+
+        <h2>Saraga (primary domain, $n=30$)</h2>
+        <p class="text">
+            Bootstrap 95&nbsp;% CIs at $u=0.6$. The DSP baseline is included as a non-learned reference; its
+            $\Delta A$ is opposite-signed on Hindustani vocal — see the discussion below.
+        </p>
+        <div class="table-wrapper">
+            <table>
+                <thead class="center">
+                    <tr>
+                        <th>System</th>
+                        <th>$\Delta A$</th>
+                        <th>drift&nbsp;(c)</th>
+                        <th>JSD</th>
+                        <th>vel_TV&nbsp;(%)</th>
+                        <th>Pattern</th>
+                    </tr>
+                </thead>
+                <tbody class="center">
+                    <tr>
+                        <td><code>baseline_dsp_v3</code></td>
+                        <td>+0.32</td>
+                        <td>67.5</td>
+                        <td>0.027</td>
+                        <td>+10</td>
+                        <td>edits modestly; M2E reads opposite-sign</td>
+                    </tr>
+                    <tr>
+                        <td><code>editor_v3_lora</code></td>
+                        <td>−0.05</td>
+                        <td>1.7</td>
+                        <td>0.000</td>
+                        <td>+0.01</td>
+                        <td>output is bit-identical across $u$</td>
+                    </tr>
+                    <tr>
+                        <td><code>editor_v3</code></td>
+                        <td>−1.35</td>
+                        <td>292</td>
+                        <td>0.38</td>
+                        <td>+128</td>
+                        <td>calms aggressively; spectral drift</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_a</code><br>(Celtic-trained, on Saraga)</td>
+                        <td>+0.47</td>
+                        <td>0</td>
+                        <td>0.021</td>
+                        <td>+100</td>
+                        <td>tonic preserved; M2E sign-flips vs. Celtic</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <img src="static/v3_panels.png" alt="Saraga test set bootstrap-CI panels: arousal change, tonic drift, pitch-class JSD, and velocity-TV change as a function of u, for editor_v3 and editor_v3_lora." style="width:100%; margin-top: 1em;">
+        <p class="caption">
+            Saraga ($n=30$) — bootstrap mean&nbsp;$\pm$&nbsp;SE per&nbsp;$u$ for the two trained Saraga editors,
+            with plan-gate thresholds shown as dashed red lines. <code>editor_v3</code> reaches the $\Delta A$ gate
+            but exceeds the drift and JSD bounds; <code>editor_v3_lora</code> is flat across&nbsp;$u$.
+        </p>
+
+        <h2>Celtic (cross-domain, $n=29$)</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead class="center">
+                    <tr>
+                        <th>System</th>
+                        <th>$\Delta A$</th>
+                        <th>JSD</th>
+                        <th>vel_TV&nbsp;(%)</th>
+                        <th>meter match</th>
+                        <th>Pattern</th>
+                    </tr>
+                </thead>
+                <tbody class="center">
+                    <tr>
+                        <td><code>celtic_track_a</code></td>
+                        <td>−1.55</td>
+                        <td>0.022</td>
+                        <td>+106</td>
+                        <td>0.45</td>
+                        <td>edit not modulated by $u$; meter retained on $\sim\!\!\frac{1}{2}$ clips</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_b</code> (LoRA)</td>
+                        <td>0.00</td>
+                        <td>0.000</td>
+                        <td>0.00</td>
+                        <td>1.00</td>
+                        <td>passthrough at every $u$</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_c</code> (hybrid encoder)</td>
+                        <td>0.00</td>
+                        <td>0.000</td>
+                        <td>0.00</td>
+                        <td>1.00</td>
+                        <td>passthrough by design (no <code>generate()</code> wired)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <img src="static/celtic_panels.png" alt="Celtic test set bootstrap-CI panels: arousal change, pitch-class JSD, rhythm JSD, and meter retention as a function of u, for the three Celtic tracks." style="width:100%; margin-top: 1em;">
+        <p class="caption">
+            Celtic ($n=29$) — bootstrap mean with 95&nbsp;% CI bands per&nbsp;$u$ for the three Celtic tracks.
+            Track&nbsp;A meets the $\Delta A$ gate at $u=0.6$ but velocity-TV is high; tracks&nbsp;B and&nbsp;C are
+            flat (passthrough).
+        </p>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Listening demos</h1>
+        <p class="text">
+            Two short input/output pairs are embedded below for quick comparison. The full A/B demo experience —
+            including all three ragas, all four $u$ values for Track&nbsp;A on Celtic, and a ramp-vs-pulse
+            $u(t)$&nbsp;profile comparison on the DSP back-end — is at the
+            <a href="demo.html">combined demo page</a>
+            (jump to <a href="demo.html#saraga">Saraga</a> or <a href="demo.html#celtic">Celtic</a>).
+        </p>
+
+        <h2>Saraga: DSP back-end at $u(t)$ ramp</h2>
+        <div class="columns-2">
+            <div>
+                <p class="caption inline center">Input: Yaman vocal (12&nbsp;s)</p>
+                <audio controls style="width:100%" aria-label="Saraga Yaman input clip">
+                    <source src="static/audio/saraga_in/yaman.wav" type="audio/wav">
+                </audio>
+            </div>
+            <div>
+                <p class="caption inline center">Output: DSP edit, $u$ ramp 0.0&nbsp;$\to$&nbsp;0.9</p>
+                <audio controls style="width:100%" aria-label="Saraga Yaman DSP-edited output">
+                    <source src="static/audio/saraga_dsp/yaman_ramp.wav" type="audio/wav">
+                </audio>
+            </div>
+        </div>
+
+        <h2>Celtic: <code>celtic_track_a</code> at $u=0.6$</h2>
+        <div class="columns-2">
+            <div>
+                <p class="caption inline center">Input: <em>Brocéliande</em> (12&nbsp;s)</p>
+                <audio controls style="width:100%" aria-label="Celtic Broceliande input clip">
+                    <source src="static/audio/celtic_in/broceliande.wav" type="audio/wav">
+                </audio>
+            </div>
+            <div>
+                <p class="caption inline center">Output: <code>celtic_track_a</code>, $u=0.6$</p>
+                <audio controls style="width:100%" aria-label="Celtic Broceliande edited by celtic_track_a at u=0.6">
+                    <source src="static/audio/celtic_track_a/broceliande_u0.6.wav" type="audio/wav">
+                </audio>
+            </div>
+        </div>
+
+        <p class="caption" style="margin-top:1em;">
+            Audio derived from Saraga (CC&nbsp;BY-NC-SA) and MTG-Jamendo (CC). Clips are downsampled to 24&nbsp;kHz
+            mono PCM-16 for the demo.
+        </p>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Observations</h1>
+
+        <ul>
+            <li><p class="text"><b><code>editor_v3_lora</code> is&nbsp;$u$-blind.</b> The T5 encoder appears to
+                collapse the "intensity&nbsp;0.x" text suffix to near-identical embeddings, so the
+                ~3&nbsp;M-param LoRA never receives a discriminating signal at conditioning time. Empirically,
+                the model learns "edit&nbsp;$\approx$&nbsp;identity": MD5s of the decoded output are
+                bit-identical across $u\in\{0.0, 0.3, 0.6, 0.9\}$.</p></li>
+            <li><p class="text"><b><code>editor_v3</code> calms in the metric direction but drifts.</b> The
+                numerical $u$-embedding (bucketed&nbsp;$\to$&nbsp;projected&nbsp;$\to$&nbsp;added to token
+                embeddings) gives the editor a strong conditioning signal, but absent an explicit raga-grammar
+                regulariser the GPT-2 head trades pitch-class structure for arousal reduction. The PCD-KL term
+                contributes ($0.38$ vs.&nbsp;$\sim\!0.5$ with the loss off) but is not strong enough alone.</p></li>
+            <li><p class="text"><b><code>celtic_track_a</code> sign-flips across domains.</b> The same
+                architecture trained on Celtic mood pairs produces metric-direction edits on Celtic and
+                metric-opposite edits on Saraga. Two non-exclusive hypotheses: (a)&nbsp;the Celtic-domain edit
+                rule is acoustically inappropriate for Hindustani vocal; (b)&nbsp;the M2E arousal scorer was
+                trained on Western popular music and is biased on Hindustani vocal — the same acoustic changes
+                that read "calmer" in folk read "more aroused" in raga.</p></li>
+            <li><p class="text"><b>The DSP baseline is consistent with hypothesis (b).</b> Parametric EQ +
+                compressor + pitch-shift on Hindustani vocal sound subjectively softer to a human listener
+                (less brightness, less peakiness) but M2E reports&nbsp;$\Delta A=+0.32$. A small listener
+                study would settle which side is right.</p></li>
+            <li><p class="text"><b>$u$ is currently a switch, not a magnitude.</b> Across the three trained
+                editors, $u$-dependence ranges from "absent" (LoRA — bit-identical MD5s) to "non-monotone"
+                (<code>editor_v3</code>: $-0.79\to-0.68\to-1.35\to-1.17$ across $u\in\{0.0, 0.3, 0.6, 0.9\}$)
+                to "single-step" (<code>celtic_track_a</code>: $-1.55$ across all&nbsp;$u$). Smooth modulation
+                of edit magnitude — required by the continuous-control framing — has not yet been learned.</p></li>
+        </ul>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Established results</h1>
+
+        <ol>
+            <li><p class="text"><b>Streaming infrastructure runs end-to-end.</b> WavTokenizer encode&nbsp;$\to$&nbsp;BPE&nbsp;$\to$&nbsp;conditional
+                editor&nbsp;$\to$&nbsp;cosine-crossfade overlap-add. Real-time factor&nbsp;$&lt;0.12$ on the demo
+                clips (about $8\times$ faster than playback).</p></li>
+            <li><p class="text"><b>Three trained checkpoints, one architecture class.</b> <code>editor_v3</code>
+                and <code>celtic_track_a</code> are both <code>models/codec_editor.py::CodecEditor</code>; the
+                cross-domain comparison is therefore on identical model code.</p></li>
+            <li><p class="text"><b>Cross-domain experiment is honest.</b> Same architecture, two cultural
+                corpora, evaluated on identical inputs; the sign-flip finding is empirical, not a wiring bug.</p></li>
+            <li><p class="text"><b>Numerical&nbsp;$u$-embedding outperforms T5 text-suffix conditioning</b> for
+                codec editors on the "produce any detectable edit" criterion. <code>editor_v3</code> and
+                <code>celtic_track_a</code> both edit; <code>editor_v3_lora</code> does not.</p></li>
+            <li><p class="text"><b>Pipeline regenerates from scratch.</b> <code>python regenerate_demo.py</code>
+                from <code>pipeline/</code> produces bit-identical raga DSP demo WAVs in under five seconds.</p></li>
+        </ol>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Limitations and future development</h1>
+
+        <ul>
+            <li><p class="text">Tonic-stability target ($&lt;15$&nbsp;cents) is exceeded by <code>editor_v3</code>
+                ($292$&ndash;$551$&nbsp;c) and roughly met by <code>celtic_track_a</code> ($0$&ndash;small).
+                A PCD-aware raga-preservation classifier (deferred from this iteration) is the most direct path
+                forward.</p></li>
+            <li><p class="text">PCD-JSD target ($&lt;0.05$) is met by <code>editor_v3_lora</code> and
+                <code>celtic_track_a</code> ($0.000$&nbsp;/&nbsp;$0.02$) and exceeded by <code>editor_v3</code>
+                ($0.37$&ndash;$0.43$).</p></li>
+            <li><p class="text">Velocity-TV target ($&lt;15\%$ increase) is exceeded by both ML editors
+                ($+100\%$ to $+141\%$). A frame-energy-aware regulariser is a natural next step.</p></li>
+            <li><p class="text">Smooth $u$-modulation has not yet been learned by any of the three editors. A
+                monotone-in-$u$ training objective and curriculum on intermediate $u$ values are the next two
+                interventions to try.</p></li>
+            <li><p class="text">Celtic Track&nbsp;B inference debug and Celtic Track&nbsp;C
+                <code>generate()</code> implementation are recoverable next steps that did not make this
+                drop.</p></li>
+            <li><p class="text">A small listener study is the cleanest way to disambiguate hypotheses (a) and
+                (b) above for the cross-domain sign-flip on $\Delta A$.</p></li>
+        </ul>
+    </div>
+
+
+    <div class="container blog main">
+        <h1 id="refs">References</h1>
+
+        <ol class="references">
+            <li><p class="text">Ji-Sheng, P., Huang, X., Cheng, R., Chu, Y., Zhang, Y., Bian, B., Cong, J.,
+                Zhao, Z. <i>WavTokenizer: an Efficient Acoustic Discrete Codec Tokenizer for Audio Language
+                Modeling.</i> arXiv:2408.16532, 2024. (<code>novateur/WavTokenizer-large-unify-40token</code>)</p></li>
+            <li><p class="text">Copet, J., Kreuk, F., Gat, I., Remez, T., Kant, D., Synnaeve, G., Adi, Y.,
+                D&eacute;fossez, A. <i>Simple and Controllable Music Generation.</i> Advances in Neural
+                Information Processing Systems (NeurIPS), 2023.</p></li>
+            <li><p class="text">Li, Y., Yuan, R., Zhang, G., Ma, Y., Chen, X., Yin, H., Lin, C., Ragni, A.,
+                Benetos, E., Gyenge, N., Liu, R., Xia, G., Dannenberg, R., Guo, Y., Fu, J. <i>MERT: Acoustic
+                Music Understanding Model with Large-Scale Self-Supervised Training.</i> International
+                Conference on Learning Representations (ICLR), 2024.</p></li>
+            <li><p class="text">Music2Emotion (M2E). <i>A valence / arousal regressor on the DEAM 1&ndash;9
+                scale, augmented with MTG-Jamendo mood tags.</i> Open-source release.</p></li>
+            <li><p class="text">Srinivasamurthy, A., Koduri, G.&nbsp;K., Gulati, S., Ishwar, V., Serra, X.
+                <i>Saraga: Open Datasets for Research on Indian Art Music.</i> Empirical Musicology Review,
+                CompMusic / MTG-UPF, 2014&ndash;2018.</p></li>
+            <li><p class="text">Bogdanov, D., Won, M., Tovstogan, P., Porter, A., Serra, X. <i>The MTG-Jamendo
+                Dataset for Automatic Music Tagging.</i> ICML Machine Learning for Music Discovery Workshop,
+                2019.</p></li>
+            <li><p class="text">Koduri, G.&nbsp;K., Gulati, S., Rao, P., Serra, X. <i>R&#257;ga Recognition Based
+                on Pitch Distribution Methods.</i> Journal of New Music Research, 41(4):337&ndash;350, 2012.</p></li>
+        </ol>
+    </div>
+
+
+    <div class="container blog main">
+    </div>
+
+
+    <footer>
+        <div class="container">
+            <p>
+                This page is built on the <a href="https://shikun.io/projects/clarity">Clarity Template</a>,
+                designed by <a href="https://shikun.io/">Shikun Liu</a>.
+            </p>
+        </div>
+    </footer>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="clarity/clarity.js"></script>
+    <script src="assets/scripts/main.js"></script>
+</body>
+</html>

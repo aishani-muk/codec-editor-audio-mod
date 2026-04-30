@@ -1,0 +1,319 @@
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio demos · Codec-token editor for music affect modulation</title>
+    <meta name="description" content="A/B audio demos for the streaming codec-token editor: Saraga DSP back-end across u(t) ramp and pulse profiles, plus celtic_track_a across u ∈ {0.0, 0.3, 0.6, 0.9}.">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <meta name="robots" content="all">
+
+    <link rel="stylesheet" type="text/css" media="all" href="assets/stylesheets/main_free.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="clarity/clarity.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/foundation.min.css">
+    <link href="assets/fontawesome-free-7.2.0-web/css/all.min.css" rel="stylesheet">
+    <script src="assets/scripts/navbar.js"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            "HTML-CSS": { scale: 95, fonts: ["Gyre-Pagella"], imageFont: null, undefinedFamily: "'Arial Unicode MS', cmbright" },
+            tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]], processEscapes: true }
+        });
+    </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+      div.container.blog .clip-label { font-weight: 600; padding-right: 1em; vertical-align: top; }
+      div.container.blog .clip-label .sub { display: block; font-size: 80%; font-weight: 400; color: #666; padding-top: 0.2em; }
+      div.container.blog audio { width: 100%; padding-top: 0.4em; padding-bottom: 0.4em; }
+      div.container.blog .audio-grid { display: grid; gap: 0.6em 1em; align-items: center; padding-top: 0.8em; }
+      div.container.blog .audio-grid.cols-3 { grid-template-columns: 200px 1fr 1fr; }
+      div.container.blog .audio-grid.cols-6 { grid-template-columns: 200px 1fr 1fr 1fr 1fr 1fr; }
+      div.container.blog .audio-grid .grid-head { font-weight: 600; font-size: 90%; color: #444; padding-bottom: 0.3em; border-bottom: 2px solid #444; }
+      div.container.blog .audio-grid .row-divider { grid-column: 1 / -1; border-top: 1px solid #eee; }
+    </style>
+</head>
+
+<body>
+
+    <div class="container blog" id="first-content"
+         style="background: linear-gradient(90deg, hsla(298, 68%, 90%, 1) 0%, hsla(30, 82%, 91%, 1) 100%);">
+        <div class="blog-title no-cover">
+            <div class="blog-intro">
+                <div>
+                    <h1 class="title">Audio demos</h1>
+                    <p class="author">Codec-token editor for music affect modulation</p>
+                    <p class="abstract">
+                        A/B comparisons for the streaming codec-token editor. The Saraga side shows the deterministic
+                        DSP back-end at two distinct $u(t)$&nbsp;profiles (a linear ramp and a Gaussian pulse). The
+                        Celtic side shows the trained <code>celtic_track_a</code> editor at four constant&nbsp;$u$
+                        values. Every clip is 24&nbsp;kHz mono PCM-16, decoded by the same WavTokenizer +
+                        cosine-crossfade overlap-add streaming pipeline.
+                    </p>
+                </div>
+
+                <div class="info">
+                    <div>
+                        <a href="index.html" class="button icon" style="background-color: rgba(255, 255, 255, 0.4); margin-bottom: 0;">Back to project page <i class="fa-solid fa-arrow-left"></i></a>
+                        <a href="https://github.com/aishani-muk/low-latency-audio-mod" class="button icon" style="background-color: rgba(255, 255, 255, 0.4); margin-bottom: 0;">Code <i class="fa-solid fa-code"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container blog main first" id="blog-main">
+        <h1 id="saraga">Saraga (Hindustani classical) — DSP back-end</h1>
+
+        <p class="text">
+            Three raga clips (Yaman, Todi, Shree) under two $u(t)$&nbsp;profiles. The DSP back-end is parametric
+            EQ&nbsp;+ compressor&nbsp;+ pitch-shift, all conditioned on $u(t)$, and runs through the streaming
+            pipeline at RTF&nbsp;$&lt;$&nbsp;0.12. The trained Saraga LoRA-MusicGen editor (<code>editor_v3_lora</code>)
+            is&nbsp;$u$-blind on this corpus and would produce bit-identical output across&nbsp;$u$, so it is
+            represented in the metrics table on the project page rather than as inline audio.
+        </p>
+
+        <h2>$u(t)$ ramp&nbsp;0.0&nbsp;$\to$&nbsp;0.9</h2>
+        <div class="audio-grid cols-3">
+            <div class="grid-head">Raga</div>
+            <div class="grid-head">Input</div>
+            <div class="grid-head">Edited (ramp)</div>
+
+            <div class="clip-label">Yaman <span class="sub">Bahar Gaud Malhar</span></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_in/yaman.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_dsp/yaman_ramp.wav" type="audio/wav"></audio></div>
+
+            <div class="clip-label">Todi <span class="sub">Kumar Gandharva</span></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_in/todi.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_dsp/todi_ramp.wav" type="audio/wav"></audio></div>
+
+            <div class="clip-label">Shree <span class="sub">Ajoy Chakrabarty</span></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_in/shree.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_dsp/shree_ramp.wav" type="audio/wav"></audio></div>
+        </div>
+
+        <h2>$u(t)$ Gaussian pulse, peak&nbsp;0.9 at $t=0.5$</h2>
+        <div class="audio-grid cols-3">
+            <div class="grid-head">Raga</div>
+            <div class="grid-head">Input</div>
+            <div class="grid-head">Edited (pulse)</div>
+
+            <div class="clip-label">Yaman</div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_in/yaman.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_dsp/yaman_pulse.wav" type="audio/wav"></audio></div>
+
+            <div class="clip-label">Todi</div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_in/todi.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_dsp/todi_pulse.wav" type="audio/wav"></audio></div>
+
+            <div class="clip-label">Shree</div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_in/shree.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/saraga_dsp/shree_pulse.wav" type="audio/wav"></audio></div>
+        </div>
+    </div>
+
+
+    <div class="container blog main">
+        <h1 id="celtic">Celtic — trained <code>celtic_track_a</code> (GPT-2 codec editor)</h1>
+
+        <p class="text">
+            Three Jamendo Celtic clips against four constant-$u$ outputs of the trained <code>celtic_track_a</code>
+            editor. Same <code>CodecEditor</code> architecture as <code>editor_v3</code> on the raga side; trained
+            on Celtic mood pairs (1674 pairs, 25k steps).
+        </p>
+
+        <div class="audio-grid cols-6">
+            <div class="grid-head">Clip</div>
+            <div class="grid-head">Input</div>
+            <div class="grid-head">$u=0.0$</div>
+            <div class="grid-head">$u=0.3$</div>
+            <div class="grid-head">$u=0.6$</div>
+            <div class="grid-head">$u=0.9$</div>
+
+            <div class="clip-label">country_guitars_<br>background <span class="sub">jig (m=6)</span></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_in/country_guitars_background.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/country_guitars_background_u0.0.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/country_guitars_background_u0.3.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/country_guitars_background_u0.6.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/country_guitars_background_u0.9.wav" type="audio/wav"></audio></div>
+
+            <div class="clip-label"><em>Brocéliande</em> <span class="sub">reel (m=4)</span></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_in/broceliande.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/broceliande_u0.0.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/broceliande_u0.3.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/broceliande_u0.6.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/broceliande_u0.9.wav" type="audio/wav"></audio></div>
+
+            <div class="clip-label"><em>Balada do Tejo</em> <span class="sub">jig (m=6)</span></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_in/balada_do_tejo.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/balada_do_tejo_u0.0.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/balada_do_tejo_u0.3.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/balada_do_tejo_u0.6.wav" type="audio/wav"></audio></div>
+            <div><audio controls preload="none"><source src="static/audio/celtic_track_a/balada_do_tejo_u0.9.wav" type="audio/wav"></audio></div>
+        </div>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Headline numbers (bootstrap 95&nbsp;% CI)</h1>
+
+        <h2>Saraga test set ($n=30$, primary domain)</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead class="center">
+                    <tr>
+                        <th>System</th>
+                        <th>$\Delta A$&nbsp;($u=0.0$)</th>
+                        <th>$\Delta A$&nbsp;($u=0.3$)</th>
+                        <th>$\Delta A$&nbsp;($u=0.6$)</th>
+                        <th>$\Delta A$&nbsp;($u=0.9$)</th>
+                        <th>drift&nbsp;(c)</th>
+                        <th>JSD</th>
+                        <th>vel_TV&nbsp;%</th>
+                    </tr>
+                </thead>
+                <tbody class="center">
+                    <tr>
+                        <td><code>baseline_dsp_v3</code></td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td><b>+0.32</b></td>
+                        <td>—</td>
+                        <td>67.5</td>
+                        <td>0.027</td>
+                        <td>+10</td>
+                    </tr>
+                    <tr>
+                        <td><code>editor_v3_lora</code> (LoRA-MusicGen)</td>
+                        <td>−0.05</td>
+                        <td>−0.05</td>
+                        <td><b>−0.05</b></td>
+                        <td>−0.05</td>
+                        <td>1.7</td>
+                        <td>0.000</td>
+                        <td>+0.01</td>
+                    </tr>
+                    <tr>
+                        <td><code>editor_v3</code> (GPT-2 codec)</td>
+                        <td>−0.79</td>
+                        <td>−0.68</td>
+                        <td><b>−1.35</b></td>
+                        <td>−1.17</td>
+                        <td>292</td>
+                        <td>0.38</td>
+                        <td>+128</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_a</code> on Saraga</td>
+                        <td>+0.59</td>
+                        <td>+0.78</td>
+                        <td><b>+0.47</b></td>
+                        <td>+0.86</td>
+                        <td>0</td>
+                        <td>0.021</td>
+                        <td>+100</td>
+                    </tr>
+                    <tr>
+                        <td>Plan-gate target&nbsp;($u=0.6$)</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>$\le -0.40$</td>
+                        <td>—</td>
+                        <td>$\le 100$</td>
+                        <td>$\le 0.05$</td>
+                        <td>$\le 50$</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Celtic test set ($n=29$, cross-domain validation)</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead class="center">
+                    <tr>
+                        <th>System</th>
+                        <th>$\Delta A$&nbsp;at&nbsp;$u=0.6$</th>
+                        <th>JSD</th>
+                        <th>vel_TV&nbsp;%</th>
+                        <th>meter match</th>
+                        <th>Pattern</th>
+                    </tr>
+                </thead>
+                <tbody class="center">
+                    <tr>
+                        <td><code>celtic_track_a</code></td>
+                        <td><b>−1.55</b></td>
+                        <td>0.022</td>
+                        <td>+106</td>
+                        <td>0.45</td>
+                        <td>edit not modulated by $u$</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_b</code> (LoRA)</td>
+                        <td>0.00</td>
+                        <td>0.000</td>
+                        <td>0.00</td>
+                        <td>1.00</td>
+                        <td>passthrough at every $u$</td>
+                    </tr>
+                    <tr>
+                        <td><code>celtic_track_c</code> (hybrid encoder)</td>
+                        <td>0.00</td>
+                        <td>0.000</td>
+                        <td>0.00</td>
+                        <td>1.00</td>
+                        <td>passthrough by design</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="container blog main">
+        <h1>Three observation patterns, one infrastructure</h1>
+
+        <ul>
+            <li><p class="text"><b><code>editor_v3_lora</code> does not edit measurably.</b> MD5s of the decoded
+                output are bit-identical across $u\in\{0.0, 0.3, 0.6, 0.9\}$. Likely cause: T5 collapses the
+                "intensity&nbsp;0.x" suffix to near-identical embeddings.</p></li>
+            <li><p class="text"><b><code>editor_v3</code> calms aggressively in the metric direction.</b>
+                $\Delta A=-1.35$ at $u=0.6$, with substantial pitch-class and tonic drift; structural preservation
+                is weak.</p></li>
+            <li><p class="text"><b><code>celtic_track_a</code> sign-flips across domains.</b> The Celtic-trained
+                editor produces $\Delta A=-1.55$ on Celtic and $\Delta A=+0.47$ on Saraga; the same architecture
+                trained on a different corpus moves the M2E score in opposite directions on the two test sets.
+                The DSP baseline shows the same direction discrepancy on Hindustani vocal, suggesting the M2E
+                arousal scorer (DEAM-trained on Western popular music) may carry a domain bias on Hindustani
+                vocal.</p></li>
+            <li><p class="text"><b>$u$ is currently a switch, not a magnitude.</b> Across the three trained
+                editors, $u$-dependence ranges from absent (LoRA) to non-monotone (<code>editor_v3</code>) to
+                single-step (<code>celtic_track_a</code>: $-1.55$ across all&nbsp;$u$). Smooth modulation has
+                not yet been learned.</p></li>
+        </ul>
+
+        <p class="text" style="padding-top:1em;">
+            Per-clip evaluation rows live in <code>pipeline/results/saraga_eval/</code> and
+            <code>pipeline/results/celtic_eval_track_{a,b,c}/</code>. Audio derived from Saraga (CC&nbsp;BY-NC-SA)
+            and MTG-Jamendo (CC); clips downsampled to 24&nbsp;kHz mono PCM-16 for the demo.
+        </p>
+    </div>
+
+
+    <footer>
+        <div class="container">
+            <p>
+                This page is built on the <a href="https://shikun.io/projects/clarity">Clarity Template</a>,
+                designed by <a href="https://shikun.io/">Shikun Liu</a>.
+            </p>
+        </div>
+    </footer>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="clarity/clarity.js"></script>
+    <script src="assets/scripts/main.js"></script>
+</body>
+</html>
