@@ -1,25 +1,7 @@
-"""
-Inference-time wrapper around the raga-identity classifier.
+"""Raga-ID classifier inference wrapper.
 
-Supports two feature backends, auto-selected from the checkpoint's
-``feature_type`` field:
-
-  * ``"mert"`` — MERT-v1-95M mean-pooled embeddings (768-dim).
-    Produced by ``train_raga_classifier.py``.
-  * ``"pcd"``  — tonic-normalised, octave-folded, salience-weighted
-    pitch-class distribution (120-dim by default). Produced by
-    ``train_raga_classifier_pcd.py``. Recording-invariant.
-
-Usage at eval time:
-
-    clf = RagaPredictor("checkpoints/raga_classifier_pcd/model.pt")
-    if clf.available:
-        raga_in,  _ = clf.predict_from_audio(wav_in,  tonic_hz=tonic)
-        raga_out, _ = clf.predict_from_audio(wav_out, tonic_hz=tonic)
-        raga_id_preserved = raga_in == raga_out
-
-The wrapper is a graceful no-op when the checkpoint is missing —
-``available`` becomes False and the caller can skip the metric.
+Auto-selects MERT (768-dim) or PCD (120-dim) features from the checkpoint's
+``feature_type`` field. ``available`` is False if the checkpoint is missing.
 """
 
 from __future__ import annotations
@@ -51,7 +33,7 @@ class _RagaClassifier(nn.Module):
 
 
 class RagaPredictor:
-    """Load once, predict many. ``available`` is False if the checkpoint is missing."""
+    """``available`` is False if the checkpoint is missing."""
 
     def __init__(self, checkpoint: str = "checkpoints/raga_classifier/model.pt",
                  device: str | None = None):
@@ -130,9 +112,6 @@ class RagaPredictor:
     @torch.no_grad()
     def predict(self, feature_vector: np.ndarray) -> Tuple[str, float]:
         """Classify a pre-computed feature vector.
-
-        Shape must be ``(in_dim,)`` — 768 for MERT, 120 (or whatever
-        ``n_bins`` was at train time) for PCD.
         """
         x = torch.from_numpy(np.asarray(feature_vector)).float() \
             .unsqueeze(0).to(self.device)
@@ -147,17 +126,10 @@ class RagaPredictor:
         sr: int | None = None,
         tonic_hz: float = 261.63,
     ) -> Tuple[str, float]:
-        """End-to-end: raw waveform → feature → classify.
+        """Raw waveform → feature → classify. Returns ``(raga_name, confidence ∈ [0,1])``.
 
-        Args:
-            audio: either a path to a WAV file OR a 1-D ``np.ndarray`` waveform.
-            sr:    sample rate of ``audio`` when it's an ``np.ndarray``
-                   (ignored for file paths — read from the header).
-            tonic_hz: tonic frequency in Hz. Only used for PCD checkpoints;
-                      MERT checkpoints ignore it.
-
-        Returns:
-            ``(predicted_raga_name, confidence ∈ [0,1])``.
+        ``audio`` may be a path or a 1-D ndarray (``sr`` required for ndarrays).
+        ``tonic_hz`` only matters for PCD checkpoints.
         """
         if not self.available:
             raise RuntimeError("RagaPredictor: no checkpoint loaded")
@@ -199,8 +171,7 @@ class RagaPredictor:
             audio.astype(np.float32), sr=sr, hop_ms=hop_ms,
             conf_threshold=0.5,
         )
-        # Training pipeline zeroed pitch where conf < 0.5; mirror that so the
-        # unvoiced-mask inside extract_pcd_plus behaves identically.
+
         pitch_hz = np.where(conf >= 0.5, pitch_hz, 0.0)
         return extract_pcd_plus(
             pitch_hz, conf, tonic_hz,

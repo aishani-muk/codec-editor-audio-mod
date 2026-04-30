@@ -1,38 +1,7 @@
-"""
-Thin wrapper around AMAAI-Lab's Music2Emo (ICLR-MER 2025) for per-clip
-valence/arousal/mood prediction.
+"""Music2Emo wrapper for per-clip valence / arousal / mood prediction.
 
-Why this over a hand-trained DEAM regressor
-------------------------------------------
-``train_deam_regressor.py`` was designed to train an in-house MLP on DEAM
-alone, but DEAM audio is behind a MediaEval access agreement that blocks
-automated download. Kang & Herremans 2025 ("Towards Unified Music Emotion
-Recognition across Dimensional and Categorical Models", arXiv 2502.03979)
-released a **multi-task** checkpoint trained jointly on DEAM + PMEmo +
-EmoMusic + MTG-Jamendo that beats the MediaEval 2021 winner and publishes
-both the code and the weights. We consume that directly.
-
-Output
-------
-* ``valence`` on DEAM scale **1-9** (higher = more positive)
-* ``arousal`` on DEAM scale **1-9** (higher = more energetic)
-* ``moods``: a list of predicted MTG-Jamendo mood tags (binary, threshold 0.5)
-
-The neutral target used by ``shift_toward_neutral`` is
-``(valence=5.0, arousal=3.0)`` — mid valence, low arousal — i.e. the calm
-contemplative profile this project is trying to steer listeners toward.
-
-Availability
-------------
-The wrapper is a graceful no-op if ``third_party/Music2Emotion/`` is missing
-(``available`` becomes False and callers can skip the metric).
-
-Important note on cwd
----------------------
-``Music2emo.predict`` uses *relative* paths (``./temp_out``, ``./output``,
-``./inference/data/...``) and ``shutil.rmtree``s them on every call. We
-therefore ``chdir`` into the Music2Emotion directory around each call and
-restore the caller's cwd in a ``finally``.
+Output: V/A on the DEAM 1-9 scale, mood tags from MTG-Jamendo.
+``available`` is False when ``third_party/Music2Emotion/`` is missing
 """
 
 from __future__ import annotations
@@ -97,19 +66,12 @@ class Music2EmoRegressor:
                 f"Music2Emo not found at {self.MUSIC2EMO_DIR}. "
                 f"Clone https://github.com/AMAAI-Lab/Music2Emotion there."
             )
-        # HuggingFace `transformers` >= 4.49 refuses to torch.load(weights_only=True)
-        # unless torch >= 2.6 (CVE-2025-32434 mitigation). The main .venv pins
-        # torch 2.5.1 so MERT's m-a-p/MERT-v1-95M .bin checkpoint load refuses
-        # to proceed. We trust the HF-hosted MERT model here, so we disable
-        # the version check locally for this load path only. Scope: this
-        # function; other transformers calls retain the default guard.
+
         try:
-            _noop = lambda: None                                # noqa: E731
-            import transformers.utils.import_utils as _hf_iu   # type: ignore
+            _noop = lambda: None                               
+            import transformers.utils.import_utils as _hf_iu   
             _hf_iu.check_torch_load_is_safe = _noop
-            # `modeling_utils` imports the function by name, creating a
-            # separate binding, so patch that too.
-            import transformers.modeling_utils as _hf_mu        # type: ignore
+            import transformers.modeling_utils as _hf_mu       
             _hf_mu.check_torch_load_is_safe = _noop
         except Exception:
             pass
@@ -119,12 +81,10 @@ class Music2EmoRegressor:
         try:
             os.chdir(self.MUSIC2EMO_DIR)
             sys.path.insert(0, str(self.MUSIC2EMO_DIR))
-            from music2emo import Music2emo   # type: ignore
+            from music2emo import Music2emo   
             self._model = Music2emo()
         finally:
             os.chdir(orig_cwd)
-            # Leave the sys.path entry; `music2emo` module may import more
-            # sub-modules lazily on the first predict() call.
             if str(self.MUSIC2EMO_DIR) not in orig_sys_path:
                 pass
         self._loaded = True

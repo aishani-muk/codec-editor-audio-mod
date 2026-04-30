@@ -1,16 +1,7 @@
-"""
-Thin cached wrapper around ``m-a-p/MERT-v1-95M`` (Li et al., ICLR 2024).
+"""MERT-v1-95M wrapper: 768-dim time-mean pooled embeddings per clip.
 
-MERT is a self-supervised music-understanding model trained with HuBERT-style
-masked prediction on 1000 h of music. Its mean-pooled hidden states are the
-2024 default general-purpose features for downstream music-MIR tasks
-(genre/tag/instrument classification, emotion regression, raga identification).
-
-This wrapper:
-  * Loads MERT-v1-95M once (95M params, <300 MB on disk, <1 s / 10 s clip on A4000).
-  * Exposes ``embed_wav_file(path) -> (D,)`` and ``embed_batch(paths) -> (B, D)``
-    helpers that return layer-mean + time-mean pooled 768-dim vectors.
-  * Accepts any sample rate; resamples to 24 kHz on the fly via torchaudio.
+Loads the model once; ``embed_wav_file`` and ``embed_batch`` accept any sample
+rate and resample to 24 kHz internally.
 """
 
 from __future__ import annotations
@@ -23,13 +14,7 @@ import torch
 
 
 class MERTFeatureExtractor:
-    """Singleton-friendly MERT wrapper (load once, embed many).
-
-    We load from the local converted ``third_party/MERT-v1-95M-local/`` dir
-    (safetensors) when present — avoids the ``torch>=2.6`` safety check that
-    blocks loading MERT's upstream ``pytorch_model.bin``. Falls back to the
-    HuggingFace hub name otherwise.
-    """
+    """Singleton-friendly MERT wrapper (load once, embed many)"""
 
     hub_name = "m-a-p/MERT-v1-95M"
     local_dir = "third_party/MERT-v1-95M-local"
@@ -43,7 +28,6 @@ class MERTFeatureExtractor:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.dtype = getattr(torch, dtype)
 
-        # Prefer the local safetensors mirror to sidestep torch<2.6 safety check.
         source = (
             self.local_dir
             if (_P(self.local_dir) / "model.safetensors").is_file()

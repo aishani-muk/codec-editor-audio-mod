@@ -1,8 +1,4 @@
-"""Regenerate every demo WAV in results/demo_clips/ and the A/B HTML.
-
-Re-running this from a fresh checkout (with the venv set up) should
-produce byte-identical files to those shipped in this folder.
-"""
+"""Demo HTMLs generation."""
 from pathlib import Path
 import sys, soundfile as sf
 

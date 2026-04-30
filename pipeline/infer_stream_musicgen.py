@@ -1,26 +1,11 @@
-"""Offline inference for the MusicGen-LoRA editor (rescue-v3 Track B).
+"""Offline batch inference for the LoRA-MusicGen editor at a fixed u.
 
-Batch-edits a directory of test WAVs at a fixed u, writing results to
-an output directory. Produces the same layout (``<stem>.wav`` matching
-the input's stem) that ``evaluate.py`` consumes.
+Encodec encode → text-prompted generate → Encodec decode, output WAVs share the
+input's stem so ``evaluate.py`` can pair them.
 
-Pipeline per clip:
-    WAV in (24 kHz) -> resample 32 kHz -> Encodec-32k encode
-                    -> prepend as decoder prefix with text prompt
-                    -> greedy / top-k generate T_out frames
-                    -> Encodec decode -> resample 24 kHz -> WAV out
-
-Test-clip metadata in ``data/test_clips_v3/<stem>.json`` provides the
-raga label; the ``--raga`` flag can override it. Fixed u passed via
-``--u``.
-
-Usage
------
-    python infer_stream_musicgen.py \\
-        --ckpt_dir   checkpoints/editor_v3_lora \\
-        --input_dir  data/test_clips_v3 \\
-        --output_dir results/editor_v3_lora/u0.6 \\
-        --u 0.6
+Usage:
+    python infer_stream_musicgen.py --ckpt_dir <ckpt> --input_dir <in> \\
+        --output_dir <out> --u 0.6
 """
 from __future__ import annotations
 

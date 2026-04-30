@@ -1,10 +1,6 @@
 """
 Inference-time wrapper around the DEAM valence/arousal regressor.
 
-Train the checkpoint with ``train_deam_regressor.py``. This module is a
-graceful no-op when the checkpoint is missing — ``evaluate.py`` skips the
-V/A metric in that case rather than erroring.
-
 Target neutral profile (low arousal, mid valence) is taken at the centre
 of the DEAM rating scale (1–9) biased slightly toward positive valence:
 ``(valence=5.0, arousal=3.0)``.
@@ -20,7 +16,6 @@ import torch
 import torch.nn as nn
 
 
-# Must match train_deam_regressor.VARegressor.
 class _VARegressor(nn.Module):
     def __init__(self, in_dim: int = 768, hidden: int = 256):
         super().__init__()

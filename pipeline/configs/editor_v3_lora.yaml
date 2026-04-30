@@ -1,7 +1,4 @@
-# Rescue-v3 Day 3 Track B — LoRA fine-tune of MusicGen-small on mined
-# natural pairs. Not inherited from base.yaml because the pipeline is
-# different enough (no WavTokenizer, no stress_embed, text conditioning
-# via T5) that sharing a parent would mostly add ignored keys.
+# LoRA fine-tune of MusicGen-small on mined natural pairs
 #
 # Launch:
 #   python train_lora_musicgen.py \
@@ -51,12 +48,9 @@ training:
   eval_steps: 500
   save_steps: 2000
   fp16: true
-  dataloader_num_workers: 0                     # nexusclass cgroup limit
+  dataloader_num_workers: 0     
 
-  # Val-entropy gate (mirrors the Track A gate: if predicted-token
-  # entropy < 0.2 * log V at eval, best/ is not saved). MusicGen's
-  # natural entropy floor is around 0.4-0.5 * log V on musical audio,
-  # so 0.2 catches only clear collapse.
+  # Val-entropy gate
   val_entropy_gate: 0.2
 
 checkpoints:

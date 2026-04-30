@@ -1,24 +1,8 @@
-"""
-Evaluation script: compute all preservation and quality metrics.
-
-Metrics:
-  1. Tonic drift (Hz, cents) — from Saraga tonic annotations
-  2. Pitch-histogram JSD — tonic-normalized, octave-folded
-  3. Velocity TV / Jerk RMS — glide smoothness proxies
-  4. DEAM Δvalence / Δarousal — emotional shift toward neutral
-  5. PESQ (optional) — perceptual audio quality
-  6. Raga-ID preserved — fraction of clips where the raga classifier's
-     prediction is the same for input and output audio. Requires a
-     trained classifier at --raga_checkpoint (PCD or MERT).
+"""Pairwise (input, output) eval: tonic drift, PCD JSD, velocity TV, jerk RMS,
+M2E ΔV/ΔA, raga-ID preservation.
 
 Usage:
-    # Evaluate proposed pipeline
-    python evaluate.py --checkpoint checkpoints/proposed_v1/best/ \\
-                       --config configs/proposed.yaml
-
-    # Evaluate DSP baseline
-    python evaluate.py --baseline dsp --input results/baseline_dsp/ \\
-                       --reference data/saraga_kalyan_thaat/
+    python evaluate.py --input <in_dir> --output <out_dir> --tonic_dir <saraga_dir>
 """
 
 import argparse
@@ -39,16 +23,7 @@ from evaluation.emotion_regressor import Music2EmoRegressor
 
 def extract_pitch(audio: np.ndarray, sr: int = 24000,
                   hop_ms: float = 10.0) -> tuple[np.ndarray, np.ndarray]:
-    """SOTA pitch extraction via PESTO → CREPE → pyin fallback chain.
-
-    Delegates to ``evaluation.pitch.extract_pitch_with_confidence`` so that
-    every downstream metric (JSD, PCD, tonic drift) uses the same
-    per-frame confidence signal.
-
-    Returns:
-        ``(pitch_hz, confidence)`` — both 1-D, same length.
-        Low-confidence frames already have pitch set to 0.
-    """
+    """Pitch + confidence via PESTO → CREPE → pyin. Low-confidence frames have pitch=0."""
     return extract_pitch_with_confidence(audio, sr=sr, hop_ms=hop_ms,
                                          conf_threshold=0.5)
 
@@ -85,12 +60,7 @@ def tonic_drift(pitch_in: np.ndarray, pitch_out: np.ndarray,
 def pitch_histogram_jsd(pitch_in: np.ndarray, conf_in: np.ndarray,
                         pitch_out: np.ndarray, conf_out: np.ndarray,
                         tonic_hz: float) -> float:
-    """Salience-weighted JSD between tonic-normalised PCDs.
-
-    Thin wrapper around ``evaluation.pcd.pcd_jsd`` (Koduri et al. JNMR 2012,
-    §4.2 variant: 1-cent bins, 30-cent Gaussian smoothing, octave-folded,
-    per-frame confidence as salience weight). Lower is better.
-    """
+    """Salience-weighted JSD between tonic-normalised PCDs (lower is better)."""
     return pcd_jsd(pitch_in, conf_in, pitch_out, conf_out, tonic_hz)
 
 

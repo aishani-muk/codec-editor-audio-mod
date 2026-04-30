@@ -1,6 +1,4 @@
-"""Model-agnostic time-varying inference wrapper for the Gradio demo.
-
-Given ``(input_wav, model, u_array)`` produces a modulated output WAV plus
+""" Given ``(input_wav, model, u_array)`` produces a modulated output WAV plus
 evaluation metrics + latency stats. Works with three back-ends:
 
   - "dsp"         : baselines/dsp_baseline.py  (no ML; chunk-wise DSP with

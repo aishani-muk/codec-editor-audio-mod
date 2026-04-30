@@ -1,16 +1,7 @@
-"""
-Pitch-Class Distribution (PCD) computation and JSD comparison.
+"""Pitch-class distribution + JSD comparison.
 
-Methodology follows:
-    Koduri, Gulati, Rao, Serra. "Raga recognition based on pitch distribution
-    methods." Journal of New Music Research 41(4):337–350, 2012.
-
-Specifically we implement the pitch-*salience*-weighted variant from §4.2:
-each cent-bin is weighted by per-frame confidence (salience proxy), not by
-uniform frame count. The distribution is then smoothed with a 30-cent
-Gaussian kernel to absorb intonational jitter without erasing fine-grained
-microtonal structure (the Gulati-Koduri literature uses 30 c; larger would
-collapse shruti-level distinctions).
+Salience-weighted, tonic-normalised, octave-folded PCD with 30-cent Gaussian
+smoothing (Koduri et al. JNMR 2012, §4.2 variant).
 """
 
 from __future__ import annotations

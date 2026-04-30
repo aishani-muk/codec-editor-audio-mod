@@ -1,13 +1,6 @@
-"""
-Pitch extraction with the SOTA 2024 fallback chain.
+"""Pitch + per-frame confidence via PESTO → CREPE → pyin fallback chain.
 
-Primary:   PESTO (Riou et al., Transactions of ISMIR 2024) — self-supervised,
-           Variable-Q Transform, ~30k params, 10 ms step, real-time capable.
-Fallback:  CREPE (Kim et al., ICASSP 2018) — 22M-param CNN, still accurate.
-Final:     librosa.pyin — algorithmic pYIN, always available.
-
-All three return (pitch_hz, confidence, hop_ms) with the same shape so downstream
-metrics don't care which estimator produced them.
+Returns (pitch_hz, confidence) at the same hop regardless of which backend ran.
 """
 
 from __future__ import annotations
@@ -25,11 +18,7 @@ def extract_pitch_with_confidence(
     conf_threshold: float = 0.5,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Return (pitch_hz, confidence) with low-confidence frames zeroed.
-
     Shape: both arrays are 1-D of length approximately ``len(audio) / (sr * hop_ms / 1000)``.
-
-    Confidence is in [0, 1] for PESTO and CREPE; the pyin fallback returns
-    a binary voicing flag coerced to float.
     """
     # ── 1. PESTO (primary, 2024) ──
     try:
