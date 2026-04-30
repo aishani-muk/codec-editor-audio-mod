@@ -95,8 +95,6 @@ These are independent modes of the same conditional-generation problem riding on
 - PCD-JSD target (< 0.05) is met by `editor_v3_lora` and `celtic_track_a` (0.000 / 0.02) and exceeded by `editor_v3` (0.37–0.43).
 - Velocity-TV target (< 15 % increase) is exceeded by both ML editors (+100 % to +141 %).
 - Smooth u-modulation is not yet learned by any of the three editors.
-- A v3 PCD-aware raga-preservation classifier was deferred; the raga-pres percentage column is not filled.
-- Celtic Track B inference debug and Celtic Track C `generate()` implementation are recoverable next steps but not in this drop.
 
 ## Regenerating from scratch (optional)
 
