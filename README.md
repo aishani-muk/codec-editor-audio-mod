@@ -81,7 +81,7 @@ Plan-gate targets:
 
 These are independent modes of the same conditional-generation problem riding on a shared end-to-end streaming pipeline.
 
-## What's solid
+## Established results
 
 1. **Streaming infrastructure runs end-to-end.** WavTokenizer encode → BPE → conditional editor → cosine-crossfade overlap-add. Real-time factor < 0.12 on the demo clips (8× faster than playback).
 2. **Three trained checkpoints, one architecture class.** `editor_v3` and `celtic_track_a` are both `models/codec_editor.py::CodecEditor`; the cross-domain comparison is therefore on identical model code.
@@ -89,7 +89,7 @@ These are independent modes of the same conditional-generation problem riding on
 4. **Numerical u-embedding outperforms T5 text-suffix conditioning** for codec editors on the "produce any edit at all" criterion. `editor_v3` and `celtic_track_a` both edit; `editor_v3_lora` does not.
 5. **Pipeline regenerates from scratch.** `python regenerate_demo.py` from `pipeline/` produces bit-identical raga DSP demo WAVs in under 5 seconds.
 
-## What's open
+## Limitations and future work
 
 - Tonic-stability target (< 15 cents) is exceeded by `editor_v3` (292–551 cents) and roughly met by `celtic_track_a` (0–small).
 - PCD-JSD target (< 0.05) is met by `editor_v3_lora` and `celtic_track_a` (0.000 / 0.02) and exceeded by `editor_v3` (0.37–0.43).
